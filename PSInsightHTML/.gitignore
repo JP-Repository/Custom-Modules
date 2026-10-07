@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# VS Code local workspace settings
+.vscode/
+
+# Generated HTML reports
+Reports/*.html
+Reports/**/*.html
+
+# Logs
+Logs/
+*.log
+
+# Temporary / backup files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# Test result artifacts
+TestResults/
+*.trx
+*.junit.xml
+*.nunit.xml
+coverage/
+
+# Generated archives
+*.zip
+
+# Local sample workbook - do not publish yet
+Examples/Data/Active_Directory_Enterprise_User_Inventory_5000.xlsx
