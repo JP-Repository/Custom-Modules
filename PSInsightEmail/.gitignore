@@ -1,0 +1,23 @@
+.DS_Store
+
+# Generated email previews
+Examples/Preview/
+Preview/*.html
+Output/*.html
+
+# Logs
+Logs/
+*.log
+
+# Temporary and backup files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# Test results
+TestResults/
+*.trx
+*.junit.xml
+*.nunit.xml
