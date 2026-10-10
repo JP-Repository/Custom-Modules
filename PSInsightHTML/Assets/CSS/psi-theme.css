@@ -138,6 +138,7 @@
 }
 
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: var(--psi-navigation-offset, 84px); }
 body { margin: 0; background: var(--psi-background); color: var(--psi-text); }
 body.psi-dialog-open { overflow: hidden; }
 .psi-shell { width: min(1120px, calc(100% - 40px)); margin: 48px auto; }
@@ -181,19 +182,21 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); line-height: 1.15; letter-spa
   border-radius: 14px;
   box-shadow: var(--psi-shadow);
 }
-.psi-status-healthy { --psi-component-status: var(--psi-status-healthy); }
-.psi-status-warning { --psi-component-status: var(--psi-status-warning); }
-.psi-status-critical { --psi-component-status: var(--psi-status-critical); }
-.psi-status-info { --psi-component-status: var(--psi-status-info); }
-.psi-status-informational { --psi-component-status: var(--psi-status-informational); }
-.psi-status-neutral { --psi-component-status: var(--psi-status-neutral); }
-.psi-status-unknown { --psi-component-status: var(--psi-status-unknown); }
-.psi-status-not-checked { --psi-component-status: var(--psi-status-not-checked); }
+.psi-status-healthy { --psi-component-status: var(--psi-status-healthy); --psi-component-surface: var(--psi-healthy-surface); --psi-component-outline: var(--psi-healthy-outline); }
+.psi-status-warning { --psi-component-status: var(--psi-status-warning); --psi-component-surface: var(--psi-warning-surface); --psi-component-outline: var(--psi-warning-outline); }
+.psi-status-critical { --psi-component-status: var(--psi-status-critical); --psi-component-surface: var(--psi-critical-surface); --psi-component-outline: var(--psi-critical-outline); }
+.psi-status-info { --psi-component-status: var(--psi-status-info); --psi-component-surface: var(--psi-informational-surface); --psi-component-outline: var(--psi-informational-outline); }
+.psi-status-informational { --psi-component-status: var(--psi-status-informational); --psi-component-surface: var(--psi-informational-surface); --psi-component-outline: var(--psi-informational-outline); }
+.psi-status-neutral { --psi-component-status: var(--psi-status-neutral); --psi-component-surface: var(--psi-neutral-surface); --psi-component-outline: var(--psi-neutral-outline); }
+.psi-status-unknown { --psi-component-status: var(--psi-status-unknown); --psi-component-surface: var(--psi-neutral-surface); --psi-component-outline: var(--psi-neutral-outline); }
+.psi-status-not-checked { --psi-component-status: var(--psi-status-not-checked); --psi-component-surface: var(--psi-neutral-surface); --psi-component-outline: var(--psi-neutral-outline); }
 .psi-kpi-card { grid-column: span var(--psi-component-span, var(--psi-row-columns)); position: relative; min-width: 0; padding: 20px; border-top: 3px solid var(--psi-component-status); }
 .psi-kpi-icon { position: absolute; top: 17px; right: 18px; display: inline-flex; color: var(--psi-component-status); }
-.psi-kpi-clickable { width: 100%; appearance: none; color: var(--psi-text); font: inherit; text-align: left; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease; }
-.psi-kpi-clickable:hover { z-index: 1; transform: translateY(-3px); background: var(--psi-interactive-hover); box-shadow: var(--psi-shadow); }
+.psi-kpi-clickable { width: 100%; appearance: none; color: var(--psi-text); font: inherit; text-align: left; cursor: pointer; transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease; }
 .psi-kpi-clickable:focus-visible, .psi-theme-control button:focus-visible, .psi-dialog-close:focus-visible, .psi-dialog-search input:focus-visible { outline: 3px solid var(--psi-focus-ring); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .psi-kpi-clickable:hover { z-index: 1; transform: translateY(-2px); background: var(--psi-interactive-hover); box-shadow: var(--psi-shadow); }
+}
 .psi-kpi-drill-hint { display: inline-flex; align-items: center; gap: 5px; margin-top: 13px; color: var(--psi-accent); font-size: 11px; font-weight: 700; }
 .psi-kpi-title { margin: 0; color: var(--psi-muted); font-size: 13px; font-weight: 650; }
 .psi-kpi-value { margin: 12px 0 4px; font-size: clamp(24px, 3vw, 32px); font-weight: 750; line-height: 1.1; letter-spacing: -.035em; overflow-wrap: anywhere; }
@@ -338,10 +341,19 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); line-height: 1.15; letter-spa
 .psi-finding-description { margin: 8px 0 0; color: var(--psi-text); line-height: 1.55; }
 .psi-finding-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 22px; margin: 16px 0 0; }
 .psi-finding-details div { min-width: 0; }
-.psi-finding-details dt, .psi-finding-recommendation strong { color: var(--psi-muted); font-size: 11px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.psi-finding-details dt { color: var(--psi-muted); font-size: 11px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
 .psi-finding-details dd { margin: 4px 0 0; line-height: 1.45; overflow-wrap: anywhere; }
-.psi-finding-recommendation { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--psi-border); }
-.psi-finding-recommendation p { margin: 5px 0 0; line-height: 1.5; }
+.psi-finding-recommendation { margin-top: 16px; padding: 12px 14px; background: var(--psi-component-surface, var(--psi-surface-raised)); border: 1px solid var(--psi-component-outline, var(--psi-border)); border-left: 3px solid var(--psi-component-status); border-radius: 8px; }
+.psi-finding-recommendation strong { color: var(--psi-component-status); font-size: 11px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.psi-finding-recommendation p { margin: 5px 0 0; color: var(--psi-text); line-height: 1.5; }
+.psi-findings-explorer { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; margin-top: 18px; padding: 12px 14px; background: var(--psi-surface-raised); border: 1px solid var(--psi-border); border-radius: 10px; }
+.psi-findings-explorer-control { display: grid; flex: 1 1 280px; gap: 6px; color: var(--psi-muted); font-size: 11px; font-weight: 650; }
+.psi-findings-explorer-control select { width: 100%; min-height: 36px; padding: 8px 10px; color: var(--psi-text); background: var(--psi-surface); border: 1px solid var(--psi-border); border-radius: 8px; font: inherit; font-size: 12px; }
+.psi-findings-explorer-control select:focus-visible { outline: 2px solid var(--psi-focus-ring); outline-offset: 2px; }
+.psi-findings-explorer-summary { display: grid; flex: 1 1 260px; gap: 5px; color: var(--psi-muted); font-size: 12px; line-height: 1.4; }
+.psi-findings-status-summary { display: flex; flex-wrap: wrap; gap: 5px; }
+.psi-findings-status-count { color: var(--psi-component-status); font-weight: 700; }
+.psi-findings-status-separator { color: var(--psi-muted); }
 .psi-finding-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--psi-border); }
 .psi-finding-evidence { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; color: var(--psi-accent); background: var(--psi-surface-raised); border: 1px solid var(--psi-border); border-radius: 8px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .psi-finding-evidence:hover { background: var(--psi-interactive-hover); }
@@ -365,10 +377,12 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); line-height: 1.15; letter-spa
   @page { margin: 14mm; }
   body { background: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .psi-shell { width: 100%; max-width: none; margin: 0; padding: 0; }
-  .psi-report-nav, .psi-assessment-nav, .psi-section-nav-details, .psi-theme-control, .psi-export-toolbar, .psi-table-filterbar, .psi-table-search, .psi-table-pagination, .psi-dialog-tools, .psi-dialog-actions, .psi-dialog-pagination, .psi-kpi-drill-hint, .psi-filter-chip, .psi-filter-clear-all { display: none !important; }
+  .psi-report-nav, .psi-assessment-nav, .psi-section-nav-details, .psi-findings-explorer, .psi-theme-control, .psi-export-toolbar, .psi-table-filterbar, .psi-table-search, .psi-table-pagination, .psi-dialog-tools, .psi-dialog-actions, .psi-dialog-pagination, .psi-kpi-drill-hint, .psi-filter-chip, .psi-filter-clear-all { display: none !important; }
   .psi-header, .psi-section, .psi-table-card, .psi-chart-card, .psi-kpi-card, .psi-insight-card, .psi-alert, .psi-recommendation, .psi-finding-card { box-shadow: none !important; }
   .psi-section h2, .psi-table-heading, .psi-chart-heading { break-after: avoid-page; page-break-after: avoid; }
   .psi-kpi-card, .psi-insight-card, .psi-status-panel, .psi-alert, .psi-recommendation, .psi-finding-card, .psi-chart-card { break-inside: avoid; page-break-inside: avoid; }
+  .psi-finding-card[data-psi-finding-card][hidden] { display: block !important; }
+  .psi-row[data-psi-finding-row-hidden][hidden] { display: grid !important; }
   .psi-table-scroll, .psi-dialog-table-scroll { overflow: visible; border: 0; }
   .psi-table-card table { min-width: 0; font-size: 10px; }
   .psi-table-card thead, .psi-dialog-table thead { display: table-header-group; }
@@ -383,4 +397,8 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); line-height: 1.15; letter-spa
   body.psi-print-evidence .psi-dialog-backdrop { display: block !important; position: static; padding: 0; background: transparent; }
   body.psi-print-evidence .psi-dialog { width: 100%; max-height: none; overflow: visible; padding: 0; border: 0; box-shadow: none; }
   body.psi-print-evidence .psi-dialog-close { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }

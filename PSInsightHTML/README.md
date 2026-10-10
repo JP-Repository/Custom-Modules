@@ -2,16 +2,16 @@
 
 Enterprise PowerShell HTML assessment and reporting framework.
 
-Version 0.9.1 builds standalone reports from PowerShell objects. The generic engine renders supplied data; provider-specific interpretation lives under `Providers/`.
+Version 0.10.0 builds standalone reports from PowerShell objects. The generic engine renders supplied data; provider-specific interpretation lives under `Providers/`.
 
 ## Features
 
 - Standalone HTML with embedded CSS, JavaScript, icons, and SVG charts; no CDN required.
-- Light, Dark, and Auto themes, responsive layout, sticky assessment navigation, and print support.
-- KPI cards, key/value panels, status indicators, alerts, text, insights, and recommendations.
+- Light, Dark, and Auto themes, responsive layout, sticky report and assessment navigation, and print support.
+- KPI cards with restrained pointer and keyboard interaction feedback, plus key/value panels, status indicators, alerts, text, insights, and recommendations.
 - Tables with search, sorting, select/multiselect filters, pagination, CSV/XLSX export, and print actions.
 - Conditional cell and row formatting; Bar, Line, Doughnut, and Pie charts.
-- Structured findings, evidence drill-down, assessment composition, and a derived report overview.
+- Structured findings with severity-aware recommendations, affected-object exploration, evidence drill-down, assessment composition, and a derived report overview.
 - Six Active Directory sample providers and a PowerShell 5.1 compatibility target.
 
 ## Requirements
@@ -179,6 +179,10 @@ $Report | Add-PSIRow | Add-PSIFinding -Finding $Finding | Out-Null
 
 `New-PSIFinding` creates the object; `Add-PSIFinding` adds its card to the current row and registers it for summaries. `Title` and `Status` are required. Optional descriptive fields include `Category`, `Description`, `AffectedObject`, `Impact`, `Recommendation`, `RuleId`, and `Source`.
 
+Finding recommendations reuse the card's canonical status color and surface treatment so Critical, Warning, Healthy, Informational, and neutral results remain visually consistent. The print layout retains a status-colored border without relying on a tinted background.
+
+When a section contains multiple Finding cards across at least two distinct nonempty `AffectedObject` values, the standalone report adds a native affected-object selector. Objects are ordered by their highest-severity finding, then finding count, then name; the highest-priority object is selected initially. Counts and represented statuses update with the selection. Findings without an affected object appear under `Unspecified`, and `All findings` restores the complete section. Each Finding section operates independently, filtering preserves the original cards and evidence actions, printing restores every Finding, and browsers with JavaScript disabled display all Findings.
+
 `EvidenceTableId` references an existing table's `Id`. `EvidenceFilter` is a hashtable with `Property`, `Operator`, and `Value`, or a `Conditions` array of condition hashtables. It may include `Table`, which must match `EvidenceTableId`. Empty filters reference all records. `EvidenceColumns` selects visible source columns for the evidence view; omit it to use the table's visible columns. Evidence references are checked at export; a missing target table produces a warning and omits the evidence action. Records are referenced rather than duplicated into each finding.
 
 Evidence operators are `Equals`, `NotEquals`, `GreaterThanOrEqual`, `LessThan`, `IsEmpty`, `IsNotEmpty`, `Contains`, and `In` (using `Values`). This is a separate contract from table formatting conditions. Multiple evidence conditions narrow the result together. The shared evidence viewer supports search, sorting, pagination, and export.
@@ -240,7 +244,9 @@ The five non-inventory providers require `-UseSampleData`; they do not accept su
 
 ## Themes and navigation
 
-`New-PSIReport -Theme Light`, `-Theme Dark`, and `-Theme Auto` are supported; the generic report default is `Light`. Auto follows the browser/system preference. Standalone HTML includes theme controls and sticky assessment navigation for composed content. Print styling removes interaction controls; report printing is enabled by default and can be disabled with `Export-PSIReport -EnableReportPrint $false`.
+`New-PSIReport -Theme Light`, `-Theme Dark`, and `-Theme Auto` are supported; the generic report default is `Light`. Auto follows the browser/system preference. Standalone HTML keeps generic section navigation visible while scrolling, highlights the active section with `aria-current="location"`, applies a dynamic anchor offset, and combines section navigation with assessment navigation in composed reports. Smooth scrolling is disabled when reduced motion is requested.
+
+KPI cards use a restrained 2 px lift with a 180 ms transition on hover-capable fine pointers. Clickable KPI cards receive equivalent emphasis with keyboard focus while retaining the existing focus ring. Reduced-motion and print styles remove the transform and transition. Print styling also removes navigation and explorer controls; report printing is enabled by default and can be disabled with `Export-PSIReport -EnableReportPrint $false`.
 
 ## Example scripts
 
