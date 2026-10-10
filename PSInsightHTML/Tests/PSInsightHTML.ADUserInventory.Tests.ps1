@@ -79,7 +79,7 @@ Describe 'PSInsightHTML AD user inventory example' {
         ($script:ADInventoryInsightDefinitions | Where-Object Title -eq 'Cloud Sync Missing').Value | Should -Be 399
         ($script:ADInventoryInsightDefinitions | Where-Object Title -eq 'Never Logged On').Value | Should -Be 0
         ($script:ADInventoryInsightDefinitions | Where-Object Title -eq 'Password Never Expires').Value | Should -Be 1269
-        @($script:ADInventoryInsightDefinitions | Where-Object Title -like 'Password ≥*').Count | Should -Be 1
+        @($script:ADInventoryInsightDefinitions | Where-Object Title -like ('Password {0}*' -f [char] 0x2265)).Count | Should -Be 1
     }
 
     It 'profiles blank source fields without declaring optional blanks to be failures' {
@@ -104,9 +104,9 @@ Describe 'PSInsightHTML AD user inventory example' {
         $script:ADInventoryHtml | Should -Match 'data-psi-filter-action='
         $script:ADInventoryHtml | Should -Match 'data-psi-insight='
         $script:ADInventoryHtml | Should -Match 'Enabled \+ Expired'
-        $script:ADInventoryHtml | Should -Match 'Stale ≥ 90 Days'
+        $script:ADInventoryHtml | Should -Match ('Stale {0} 90 Days' -f [char] 0x2265)
         $script:ADInventoryHtml | Should -Match 'Cloud Sync Missing'
-        $script:ADInventoryHtml | Should -Match 'Password ≥ 365 Days'
+        $script:ADInventoryHtml | Should -Match ('Password {0} 365 Days' -f [char] 0x2265)
         $script:ADInventoryHtml | Should -Match 'Password Never Expires'
         $script:ADInventoryHtml | Should -Match 'data-psi-export-scope="evidence"'
         $script:ADInventoryHtml | Should -Match 'Apply these filters to inventory'

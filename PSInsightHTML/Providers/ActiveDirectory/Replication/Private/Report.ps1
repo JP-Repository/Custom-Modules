@@ -102,7 +102,7 @@ $null = $Report |
     Add-PSIKPI -Title 'Worst Replication Age' -Value "$WorstAge min" -Subtitle 'Known last-success timestamps only' -Status Info -Icon 'info' |
     Add-PSIKPI -Title 'Distinct Error Codes' -Value $DistinctErrorCodes -Subtitle 'Current failed attempts' -Status Info -Icon 'warning'
 $null = $Report | Add-PSIRow -Columns 12 | Add-PSIText -Size Small -Text (
-    "Fictional sample data only · {0} DCs · {1} sites · {2:N0} relationship rows · {3} current error rows · as of {4:yyyy-MM-dd HH:mm}. States are report-defined operational observations, not security or compliance verdicts." -f $Dcs.Count, $Sites.Count, $Relationships.Count, $Errors.Count, $Sample.AsOfDate)
+    "Fictional sample data only $([char] 0x00B7) {0} DCs $([char] 0x00B7) {1} sites $([char] 0x00B7) {2:N0} relationship rows $([char] 0x00B7) {3} current error rows $([char] 0x00B7) as of {4:yyyy-MM-dd HH:mm}. States are report-defined operational observations, not security or compliance verdicts." -f $Dcs.Count, $Sites.Count, $Relationships.Count, $Errors.Count, $Sample.AsOfDate)
 
 $null = $Report |
     Add-PSISection -Title 'Domain Controller Overview' |

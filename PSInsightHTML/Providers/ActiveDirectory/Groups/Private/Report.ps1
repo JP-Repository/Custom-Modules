@@ -102,7 +102,7 @@ $null = $Report |
     Add-PSIKPI -Title 'Unmanaged Groups' -Value $UnmanagedCount -Subtitle 'ManagedBy is empty' -Status Info -Icon 'info' -Filter @{ Table='group-inventory'; Property='HasOwner'; Value='No' } |
     Add-PSIKPI -Title 'Large Groups' -Value $LargeCount -Subtitle "Direct members >= $($Rules.LargeGroupMemberThreshold)" -Status Info -Icon 'users' -Filter $LargeKpiFilter
 $null = $Report | Add-PSIRow -Columns 12 | Add-PSIText -Size Small -Text (
-    "Fictional sample data only · {0:N0} groups · {1:N0} direct membership records · {2:N0} direct nested-group relationships · as of {3:yyyy-MM-dd}. All KPI states describe observations, not vulnerabilities." -f $Groups.Count, $Memberships.Count, $Nested.Count, $Sample.AsOfDate)
+    "Fictional sample data only $([char] 0x00B7) {0:N0} groups $([char] 0x00B7) {1:N0} direct membership records $([char] 0x00B7) {2:N0} direct nested-group relationships $([char] 0x00B7) as of {3:yyyy-MM-dd}. All KPI states describe observations, not vulnerabilities." -f $Groups.Count, $Memberships.Count, $Nested.Count, $Sample.AsOfDate)
 
 $null = $Report |
     Add-PSISection -Title 'Group Category and Scope' |

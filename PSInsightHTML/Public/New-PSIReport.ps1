@@ -37,7 +37,7 @@ function New-PSIReport {
         Subtitle     = $Subtitle
         Theme        = $Theme
         GeneratedOn  = Get-Date
-        ModuleVersion = '0.9.0'
+        ModuleVersion = '0.9.1'
         Sections     = [System.Collections.Generic.List[object]]::new()
         Assessments  = [System.Collections.Generic.List[object]]::new()
         Findings     = [System.Collections.Generic.List[object]]::new()

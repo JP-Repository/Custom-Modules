@@ -65,7 +65,7 @@ Describe 'PSInsightHTML core framework' {
             $Html | Should -Match 'href="#psi-section-1">Details</a>'
             $Html | Should -Match 'id="psi-section-0"'
             $Html | Should -Match 'id="psi-section-1"'
-            $Html | Should -Match 'Module v0\.9\.0'
+            $Html | Should -Match 'Module v0\.9\.1'
             $Html | Should -Match 'data-psi-theme-value>Auto</span>'
             $Html | Should -Match '<footer class="psi-footer">'
         }
@@ -89,7 +89,7 @@ Describe 'PSInsightHTML dashboard components' {
         $Report = New-PSIReport -Title 'KPI contract'
         $Report | Add-PSISection -Title 'Summary' | Add-PSIRow | Add-PSIKPI `
             -Title 'Availability' -Value ([pscustomobject]@{ Percent = 99.9 }) `
-            -Subtitle 'Rolling sample' -Status Healthy -Icon '↗' -Trend '+0.1%' `
+            -Subtitle 'Rolling sample' -Status Healthy -Icon ([string] [char] 0x2197) -Trend '+0.1%' `
             -Action @{ Type = 'Filter'; Target = 'availability' }
 
         $Component = $Report.Sections[0].Rows[0].Components[0]

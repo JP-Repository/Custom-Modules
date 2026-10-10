@@ -162,7 +162,7 @@
         if (format === 'print') { try { context.print(); message('Print dialog opened. Save as PDF from your browser.'); } catch (error) { message('Could not open the print dialog.'); } return; }
         if (!context.columns || !context.columns.length) { message('No export fields are configured.'); return; }
         if (!context.records || !context.records.length) { message('No matching records to export.'); return; }
-        message('Exporting ' + context.records.length + ' records…');
+        message('Exporting ' + context.records.length + ' records\u2026');
         try {
           var name = fileName(context.reportTitle, context.contextTitle, format === 'csv' ? 'csv' : 'xlsx', context.fileName);
           if (format === 'csv') { download(toCsv(context.records, context.columns, context.labels, context.valueReader), name, 'text/csv;charset=utf-8'); }
