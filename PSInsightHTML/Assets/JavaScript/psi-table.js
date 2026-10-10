@@ -132,7 +132,7 @@
           chip.type = 'button';
           chip.className = 'psi-filter-chip';
           chip.setAttribute('aria-label', 'Remove ' + control.getAttribute('data-psi-filter-label') + ' filter ' + value);
-          chip.textContent = control.getAttribute('data-psi-filter-label') + ': ' + value + ' ×';
+          chip.textContent = control.getAttribute('data-psi-filter-label') + ': ' + value + ' \u00d7';
           chip.addEventListener('click', function () {
             Array.prototype.slice.call(control.options).forEach(function (option) {
               if (option.value === value) { option.selected = false; }
@@ -153,7 +153,7 @@
         chip.type = 'button';
         chip.className = 'psi-filter-chip';
         chip.setAttribute('aria-label', 'Remove ' + property + ' evidence filter');
-        chip.textContent = property + ' ' + operator + (typeof expected !== 'undefined' ? ' ' + expected : '') + ' ×';
+        chip.textContent = property + ' ' + operator + (typeof expected !== 'undefined' ? ' ' + expected : '') + ' \u00d7';
         chip.addEventListener('click', function () {
           externalConditions.splice(index, 1);
           currentPage = 1;
@@ -167,7 +167,7 @@
         searchChip.type = 'button';
         searchChip.className = 'psi-filter-chip';
         searchChip.setAttribute('aria-label', 'Clear search filter');
-        searchChip.textContent = 'Search: ' + searchText + ' ×';
+        searchChip.textContent = 'Search: ' + searchText + ' \u00d7';
         searchChip.addEventListener('click', function () {
           if (searchInput) { searchInput.value = ''; }
           searchText = '';
@@ -187,7 +187,7 @@
     }
 
     function sortableNumber(value) {
-      var cleaned = value.trim().replace(/[\s,%$£€]/g, '');
+      var cleaned = value.trim().replace(/[\s,%$\u00a3\u20ac]/g, '');
       if (!cleaned) {
         return null;
       }
@@ -251,7 +251,7 @@
         emptyRow.hidden = total > 0;
       }
       if (resultCount) {
-        resultCount.textContent = total === 0 ? '0 results' : 'Showing ' + (start + 1) + '–' + end + ' of ' + total + ' results';
+        resultCount.textContent = total === 0 ? '0 results' : 'Showing ' + (start + 1) + '\u2013' + end + ' of ' + total + ' results';
       }
       if (pageInfo) {
         pageInfo.textContent = 'Page ' + currentPage + ' of ' + pageCount;
@@ -348,7 +348,7 @@
           if (activeHeader) {
             activeHeader.setAttribute('aria-sort', sortDirection === 1 ? 'ascending' : 'descending');
             var activeIndicator = activeHeader.querySelector('.psi-sort-indicator');
-            if (activeIndicator) { activeIndicator.textContent = sortDirection === 1 ? '▲' : '▼'; }
+            if (activeIndicator) { activeIndicator.textContent = sortDirection === 1 ? '\u25b2' : '\u25bc'; }
           }
           currentPage = 1;
           update();

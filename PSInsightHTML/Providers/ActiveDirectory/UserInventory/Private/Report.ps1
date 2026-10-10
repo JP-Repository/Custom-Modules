@@ -123,7 +123,7 @@ $null = $Report |
 
 $null = $Report |
     Add-PSIRow -Columns 12 |
-    Add-PSIText -Size Small -Text ("Source workbook: {0} · As of: {1} · Account status is reported as source data; Disabled is not automatically treated as a security finding." -f [System.IO.Path]::GetFileName($WorkbookPath), $Analysis.AsOfDate.ToString('yyyy-MM-dd'))
+    Add-PSIText -Size Small -Text ("Source workbook: {0} $([char] 0x00B7) As of: {1} $([char] 0x00B7) Account status is reported as source data; Disabled is not automatically treated as a security finding." -f [System.IO.Path]::GetFileName($WorkbookPath), $Analysis.AsOfDate.ToString('yyyy-MM-dd'))
 
 $null = $Report |
     Add-PSISection -Title 'Account Status' |
@@ -175,7 +175,7 @@ $null = $Report |
 
 $null = $Report |
     Add-PSIRow -Columns 12 |
-    Add-PSIText -Size Small -Text ("Report-defined investigation thresholds: inactive ≥{0} days, inactive ≥{1} days, password age ≥{2} days. Password-age evidence excludes accounts with DONT_EXPIRE_PASSWD (userAccountControl flag 0x00010000). The raw userAccountControl attribute is not included in the report." -f $InsightThresholds.Stale90Days, $InsightThresholds.Stale180Days, $InsightThresholds.PasswordAgeDays)
+    Add-PSIText -Size Small -Text ("Report-defined investigation thresholds: inactive $([char] 0x2265){0} days, inactive $([char] 0x2265){1} days, password age $([char] 0x2265){2} days. Password-age evidence excludes accounts with DONT_EXPIRE_PASSWD (userAccountControl flag 0x00010000). The raw userAccountControl attribute is not included in the report." -f $InsightThresholds.Stale90Days, $InsightThresholds.Stale180Days, $InsightThresholds.PasswordAgeDays)
 
 for ($InsightIndex = 0; $InsightIndex -lt $InsightDefinitions.Count; $InsightIndex += 3) {
     $null = $Report | Add-PSIRow -Columns 12
@@ -191,7 +191,7 @@ for ($InsightIndex = 0; $InsightIndex -lt $InsightDefinitions.Count; $InsightInd
 
 $null = $Report |
     Add-PSIRow -Columns 12 |
-    Add-PSIText -Size Small -Text ("Expiration states: {0:N0} Never · {1:N0} expired by the as-of date · {2:N0} expire today · {3:N0} have a future expiration · {4:N0} missing an expiration value. Date strings were parsed to typed DateTime values before age calculations. Source timestamps have no timezone marker; comparisons use calendar dates. Password median: {5:N0} days; maximum: {6:N0} days. Last-logon median: {7:N0} days; maximum: {8:N0} days." -f `
+    Add-PSIText -Size Small -Text ("Expiration states: {0:N0} Never $([char] 0x00B7) {1:N0} expired by the as-of date $([char] 0x00B7) {2:N0} expire today $([char] 0x00B7) {3:N0} have a future expiration $([char] 0x00B7) {4:N0} missing an expiration value. Date strings were parsed to typed DateTime values before age calculations. Source timestamps have no timezone marker; comparisons use calendar dates. Password median: {5:N0} days; maximum: {6:N0} days. Last-logon median: {7:N0} days; maximum: {8:N0} days." -f `
         $Analysis.ExpirationStates.Never, $Analysis.ExpirationStates.Expired, $Analysis.ExpirationStates.Today, $Analysis.ExpirationStates.Future, $Analysis.ExpirationStates.Missing, `
         $Analysis.PasswordAgeMedianDays, $Analysis.PasswordAgeMaximumDays, $Analysis.LastLogonAgeMedianDays, $Analysis.LastLogonAgeMaximumDays)
 

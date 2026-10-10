@@ -71,7 +71,7 @@ function Add-PSIReportOverview {
                 $Action = if ($TargetIndex -ge 0) { @{ Type = 'ScrollTo'; Target = "psi-section-$TargetIndex" } } else { @{} }
                 $Description = if ($AssessmentSummary.FindingCount -eq 0) { 'No structured findings' } else { '{0} finding(s)' -f $AssessmentSummary.FindingCount }
                 $null = $Report | Add-PSIKPI -Title $AssessmentSummary.Name -Value $AssessmentSummary.OverallStatus `
-                    -Subtitle ("$Description · $($AssessmentSummary.SectionCount) sections") -Status $AssessmentSummary.OverallStatus `
+                    -Subtitle ("$Description $([char] 0x00B7) $($AssessmentSummary.SectionCount) sections") -Status $AssessmentSummary.OverallStatus `
                     -Icon 'dashboard' -Span 3 -Action $Action
             }
         }

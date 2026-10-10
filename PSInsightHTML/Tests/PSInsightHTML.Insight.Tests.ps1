@@ -95,20 +95,20 @@ Describe 'AD user inventory report-defined insight definitions' {
 
     It 'calculates enabled-expired, stale, never-logged-on, and missing sync from normalized records' {
         ($script:InsightDefinitions | Where-Object Title -eq 'Enabled + Expired').Value | Should -Be 1
-        ($script:InsightDefinitions | Where-Object Title -eq 'Stale ≥ 90 Days').Value | Should -Be 2
-        ($script:InsightDefinitions | Where-Object Title -eq 'Stale ≥ 180 Days').Value | Should -Be 2
+        ($script:InsightDefinitions | Where-Object Title -eq ('Stale {0} 90 Days' -f [char] 0x2265)).Value | Should -Be 2
+        ($script:InsightDefinitions | Where-Object Title -eq ('Stale {0} 180 Days' -f [char] 0x2265)).Value | Should -Be 2
         ($script:InsightDefinitions | Where-Object Title -eq 'Never Logged On').Value | Should -Be 1
         ($script:InsightDefinitions | Where-Object Title -eq 'Cloud Sync Missing').Value | Should -Be 2
-        ($script:InsightDefinitions | Where-Object Title -eq 'Password ≥ 365 Days').Value | Should -Be 2
+        ($script:InsightDefinitions | Where-Object Title -eq ('Password {0} 365 Days' -f [char] 0x2265)).Value | Should -Be 2
         ($script:InsightDefinitions | Where-Object Title -eq 'Password Never Expires').Value | Should -Be 1
         @($script:InsightDefinitions).Count | Should -Be 8
     }
 
     It 'uses report thresholds and refuses inconsistent threshold configuration' {
         $Custom = @(New-PSIADUserInventoryInsightDefinition -Analysis $script:InsightAnalysis -Thresholds @{ Stale90Days = 200; Stale180Days = 300 })
-        $Custom[1].Title | Should -Be 'Stale ≥ 200 Days'
+        $Custom[1].Title | Should -Be ('Stale {0} 200 Days' -f [char] 0x2265)
         $Custom[1].Conditions[0].Value | Should -Be 200
-        ($Custom | Where-Object Title -eq 'Password ≥ 365 Days').Title | Should -Be 'Password ≥ 365 Days'
+        ($Custom | Where-Object Title -eq ('Password {0} 365 Days' -f [char] 0x2265)).Title | Should -Be ('Password {0} 365 Days' -f [char] 0x2265)
         { New-PSIADUserInventoryInsightDefinition -Analysis $script:InsightAnalysis -Thresholds @{ Stale90Days = 300; Stale180Days = 200 } } | Should -Throw '*greater than or equal*'
     }
 

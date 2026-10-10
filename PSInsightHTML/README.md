@@ -2,7 +2,7 @@
 
 Enterprise PowerShell HTML assessment and reporting framework.
 
-Version 0.9.0 builds standalone reports from PowerShell objects. The generic engine renders supplied data; provider-specific interpretation lives under `Providers/`.
+Version 0.9.1 builds standalone reports from PowerShell objects. The generic engine renders supplied data; provider-specific interpretation lives under `Providers/`.
 
 ## Features
 
@@ -18,7 +18,7 @@ Version 0.9.0 builds standalone reports from PowerShell objects. The generic eng
 
 **Declared compatibility:** the manifest specifies PowerShell 5.1 as the minimum, targeting Windows PowerShell 5.1 and later PowerShell runtimes. The generic engine requires no external PowerShell modules.
 
-**Runtime validation:** documentation examples and the existing Pester suite were exercised with PowerShell 7.5.2 on macOS during this documentation update. Native Windows PowerShell 5.1 validation has not been performed; the manifest declaration does not establish that validation. See [known limitations](docs/Known-Limitations.md) for workbook and browser-validation constraints.
+**Runtime validation:** executable PowerShell source and embedded runtime assets are kept ASCII-safe so Windows PowerShell 5.1 does not depend on UTF-8-without-BOM decoding for Unicode punctuation. Native Windows PowerShell 5.1 validation must still be performed on Windows. See [release validation](docs/Release-Validation.md) for parser, import, command-surface, sample-generation, and Pester commands, and [known limitations](docs/Known-Limitations.md) for workbook and browser-validation constraints.
 
 ## Installation and import
 

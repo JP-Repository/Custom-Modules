@@ -146,7 +146,7 @@
   var filterControls = [];
 
   function displayValue(value) {
-    if (value === null || typeof value === 'undefined' || value === '') { return '—'; }
+    if (value === null || typeof value === 'undefined' || value === '') { return '\u2014'; }
     if (typeof value === 'object') { try { return JSON.stringify(value); } catch (ignore) { return String(value); } }
     return String(value);
   }
@@ -229,7 +229,7 @@
     var start = (page - 1) * pageSize;
     var pageRecords = filteredRecords.slice(start, start + pageSize);
     renderRows(pageRecords);
-    summary.textContent = filteredRecords.length + ' matching records · showing ' + (filteredRecords.length ? (start + 1) + '–' + Math.min(start + pageSize, filteredRecords.length) : '0') + ' of ' + filteredRecords.length;
+    summary.textContent = filteredRecords.length + ' matching records \u00b7 showing ' + (filteredRecords.length ? (start + 1) + '\u2013' + Math.min(start + pageSize, filteredRecords.length) : '0') + ' of ' + filteredRecords.length;
     empty.hidden = filteredRecords.length > 0;
     pagination.hidden = filteredRecords.length <= pageSize;
     pageLabel.textContent = 'Page ' + page + ' of ' + pages;
@@ -249,7 +249,7 @@
     columns.forEach(function (column) {
       var cell = document.createElement('th'); cell.scope = 'col';
       var label = currentDefinition && currentDefinition.labels && currentDefinition.labels[column] ? currentDefinition.labels[column] : column;
-      var button = document.createElement('button'); button.type = 'button'; button.textContent = label + (sortColumn === column ? (sortDirection > 0 ? ' ▲' : ' ▼') : '');
+      var button = document.createElement('button'); button.type = 'button'; button.textContent = label + (sortColumn === column ? (sortDirection > 0 ? ' \u25b2' : ' \u25bc') : '');
       button.addEventListener('click', function () { if (sortColumn === column) { sortDirection *= -1; } else { sortColumn = column; sortDirection = 1; } buildHeader(); update(); });
       cell.appendChild(button); row.appendChild(cell);
     });

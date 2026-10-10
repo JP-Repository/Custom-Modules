@@ -115,7 +115,7 @@ $null = $Report |
     Add-PSIKPI -Title 'Zones With Aging Enabled' -Value $AgingEnabledCount -Subtitle 'Select to filter zone inventory' -Status Info -Icon 'settings' -Filter @{ Table='dns-zones'; Property='AgingEnabled'; Value='Yes' } |
     Add-PSIKPI -Title 'Servers With Scavenging Enabled' -Value $ScavengingEnabledCount -Subtitle 'Select to filter server inventory' -Status Info -Icon 'settings' -Filter @{ Table='dns-servers'; Property='ScavengingEnabled'; Value='Yes' }
 $null = $Report | Add-PSIRow -Columns 12 | Add-PSIText -Size Small -Text (
-    "Fictional sample data only · {0} DNS-capable DCs · {1} resolver rows · {2} logical zones · {3} standard forwarder rows · {4} conditional-forwarder targets · as of {5:yyyy-MM-dd}. These are configuration observations, not security verdicts." -f $Servers.Count, $Resolvers.Count, $Zones.Count, $Forwarders.Count, $Conditional.Count, $Sample.AsOfDate)
+    "Fictional sample data only $([char] 0x00B7) {0} DNS-capable DCs $([char] 0x00B7) {1} resolver rows $([char] 0x00B7) {2} logical zones $([char] 0x00B7) {3} standard forwarder rows $([char] 0x00B7) {4} conditional-forwarder targets $([char] 0x00B7) as of {5:yyyy-MM-dd}. These are configuration observations, not security verdicts." -f $Servers.Count, $Resolvers.Count, $Zones.Count, $Forwarders.Count, $Conditional.Count, $Sample.AsOfDate)
 
 $null = $Report |
     Add-PSISection -Title 'DNS Server Overview' |

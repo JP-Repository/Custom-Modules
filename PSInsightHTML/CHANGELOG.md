@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1
+
+- Made executable PowerShell source and embedded CSS/JavaScript runtime assets ASCII-safe for Windows PowerShell 5.1 decoding.
+- Preserved rendered Unicode symbols through HTML entities, runtime character construction, and JavaScript/CSS escapes.
+- Added source-compatibility regression tests and Windows PowerShell 5.1 release-validation guidance.
+
 ## 0.9.0
 
 - Generic report, section, row, and component model with assessment composition and a derived report overview.

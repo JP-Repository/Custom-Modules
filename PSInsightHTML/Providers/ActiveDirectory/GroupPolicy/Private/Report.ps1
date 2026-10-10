@@ -109,7 +109,7 @@ $null = $Report |
     Add-PSIKPI -Title 'Empty GPOs' -Value $EmptyCount -Subtitle 'No user or computer settings configured' -Status Info -Icon 'info' -Filter @{ Table='gpo-inventory'; Property='SettingsState'; Value='Empty' }
 $null = $Report |
     Add-PSIRow -Columns 12 |
-    Add-PSIText -Size Small -Text ("Fictional sample data only · {0:N0} GPOs · {1:N0} link records · {2:N0} security-filter entries · {3:N0} delegation entries · as of {4:yyyy-MM-dd}. Counts describe configuration, not security severity." -f $Gpos.Count, $Links.Count, $SecurityFilters.Count, $Delegations.Count, $Sample.AsOfDate)
+    Add-PSIText -Size Small -Text ("Fictional sample data only $([char] 0x00B7) {0:N0} GPOs $([char] 0x00B7) {1:N0} link records $([char] 0x00B7) {2:N0} security-filter entries $([char] 0x00B7) {3:N0} delegation entries $([char] 0x00B7) as of {4:yyyy-MM-dd}. Counts describe configuration, not security severity." -f $Gpos.Count, $Links.Count, $SecurityFilters.Count, $Delegations.Count, $Sample.AsOfDate)
 
 $null = $Report |
     Add-PSISection -Title 'Group Policy Inventory Overview' |

@@ -369,7 +369,7 @@ function ConvertTo-PSIChartMarkup {
             $X = [int] [math]::Round($Left + ($CategoryWidth * ($CategoryIndex + 0.5)))
             $LabelText = $Category
             if ($LabelText.Length -gt 18) {
-                $LabelText = $LabelText.Substring(0, 17) + '…'
+                $LabelText = $LabelText.Substring(0, 17) + [char] 0x2026
             }
             $SafeLabel = [System.Net.WebUtility]::HtmlEncode($LabelText)
             $SafeTitle = [System.Net.WebUtility]::HtmlEncode($Category)

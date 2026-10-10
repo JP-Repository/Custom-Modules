@@ -85,7 +85,7 @@ function Add-PSITable {
 
         [Parameter()]
         [AllowEmptyString()]
-        [string] $NullValueText = '—',
+        [string] $NullValueText = [char] 0x2014,
 
         [Parameter()]
         [bool] $EnableExport = $true,

@@ -94,7 +94,7 @@ $null = $Report |
     Add-PSIKPI -Title 'Overlapping Subnets' -Value $OverlapSubnetCount -Subtitle 'Unique configured subnet rows' -Status Info -Icon 'info' -Filter @{Table='ss-subnets';Property='OverlapState';Value='Overlap candidate'} |
     Add-PSIKPI -Title 'Sites Without DCs' -Value $NoDCCount -Subtitle 'Local DC presence not established' -Status Info -Icon 'info' -Filter @{Table='ss-sites';Property='HasDomainController';Value='No'} |
     Add-PSIRow -Columns 12 |
-    Add-PSIText -Size Small -Text ('Fictional sample data only · {0} sites · {1} subnets · {2} DCs · {3} site links. Observations are investigation candidates, not vulnerability or compliance verdicts.' -f $Sites.Count,$Subnets.Count,$DCs.Count,$Links.Count)
+    Add-PSIText -Size Small -Text ("Fictional sample data only $([char] 0x00B7) {0} sites $([char] 0x00B7) {1} subnets $([char] 0x00B7) {2} DCs $([char] 0x00B7) {3} site links. Observations are investigation candidates, not vulnerability or compliance verdicts." -f $Sites.Count,$Subnets.Count,$DCs.Count,$Links.Count)
 
 $null = $Report |
     Add-PSISection -Title 'Site Overview' |

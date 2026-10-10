@@ -49,11 +49,11 @@ $ControllerSiteDistribution = @(
 $ControllerStatusFilter = Add-PSIFilter -Property 'Status' -Label 'Status' -Values @($ControllerInventory | Select-Object -ExpandProperty Status -Unique)
 $ControllerSiteFilter = Add-PSIFilter -Property 'Site' -Label 'Site' -Values @($ControllerInventory | Select-Object -ExpandProperty Site -Unique)
 $ReplicationErrorRecords = @(
-    [pscustomobject]@{ Source = 'DC-NORTH-01'; Destination = 'DC-CENTRAL-02'; Site = 'North → Central'; ErrorCode = 1722; Status = 'Critical'; LastAttempt = '4 min ago'; Details = 'Sample RPC endpoint unavailable during the last attempt.' }
-    [pscustomobject]@{ Source = 'DC-COASTAL-03'; Destination = 'DC-SOUTH-01'; Site = 'Coastal → South'; ErrorCode = 58; Status = 'Critical'; LastAttempt = '7 min ago'; Details = 'Sample directory service rejected the request.' }
-    [pscustomobject]@{ Source = 'DC-CENTRAL-02'; Destination = 'DC-NORTH-04'; Site = 'Central → North'; ErrorCode = 1722; Status = 'Critical'; LastAttempt = '9 min ago'; Details = 'Sample RPC endpoint unavailable during the last attempt.' }
-    [pscustomobject]@{ Source = 'DC-SOUTH-01'; Destination = 'DC-COASTAL-02'; Site = 'South → Coastal'; ErrorCode = 58; Status = 'Critical'; LastAttempt = '12 min ago'; Details = 'Sample directory service rejected the request.' }
-    [pscustomobject]@{ Source = 'DC-NORTH-05'; Destination = 'DC-CENTRAL-01'; Site = 'North → Central'; ErrorCode = 1722; Status = 'Critical'; LastAttempt = '15 min ago'; Details = 'Sample RPC endpoint unavailable during the last attempt.' }
+    [pscustomobject]@{ Source = 'DC-NORTH-01'; Destination = 'DC-CENTRAL-02'; Site = "North $([char] 0x2192) Central"; ErrorCode = 1722; Status = 'Critical'; LastAttempt = '4 min ago'; Details = 'Sample RPC endpoint unavailable during the last attempt.' }
+    [pscustomobject]@{ Source = 'DC-COASTAL-03'; Destination = 'DC-SOUTH-01'; Site = "Coastal $([char] 0x2192) South"; ErrorCode = 58; Status = 'Critical'; LastAttempt = '7 min ago'; Details = 'Sample directory service rejected the request.' }
+    [pscustomobject]@{ Source = 'DC-CENTRAL-02'; Destination = 'DC-NORTH-04'; Site = "Central $([char] 0x2192) North"; ErrorCode = 1722; Status = 'Critical'; LastAttempt = '9 min ago'; Details = 'Sample RPC endpoint unavailable during the last attempt.' }
+    [pscustomobject]@{ Source = 'DC-SOUTH-01'; Destination = 'DC-COASTAL-02'; Site = "South $([char] 0x2192) Coastal"; ErrorCode = 58; Status = 'Critical'; LastAttempt = '12 min ago'; Details = 'Sample directory service rejected the request.' }
+    [pscustomobject]@{ Source = 'DC-NORTH-05'; Destination = 'DC-CENTRAL-01'; Site = "North $([char] 0x2192) Central"; ErrorCode = 1722; Status = 'Critical'; LastAttempt = '15 min ago'; Details = 'Sample RPC endpoint unavailable during the last attempt.' }
 )
 $DnsIssueRecords = @(
     [pscustomobject]@{ Resource = 'app.corp.example'; Site = 'North'; Issue = 'Lookup response exceeded sample latency threshold'; Status = 'Warning'; Resolver = '198.51.100.12' }
@@ -248,7 +248,7 @@ $null = $Report |
 $null = $Report |
     Add-PSISection -Title 'Report Context' |
     Add-PSIRow -Columns 12 |
-    Add-PSIText -Size Normal -Text 'Environment: Fictional production · Reporting window: rolling 24 hours · Scope: 42 application and platform services across three illustrative regions. This report uses synthetic sample records and does not query live infrastructure.'
+    Add-PSIText -Size Normal -Text "Environment: Fictional production $([char] 0x00B7) Reporting window: rolling 24 hours $([char] 0x00B7) Scope: 42 application and platform services across three illustrative regions. This report uses synthetic sample records and does not query live infrastructure."
 
 $null = $Report |
     Add-PSIRow -Columns 12 |
