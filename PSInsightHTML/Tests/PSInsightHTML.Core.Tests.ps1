@@ -65,7 +65,7 @@ Describe 'PSInsightHTML core framework' {
             $Html | Should -Match 'href="#psi-section-1">Details</a>'
             $Html | Should -Match 'id="psi-section-0"'
             $Html | Should -Match 'id="psi-section-1"'
-            $Html | Should -Match 'Module v0\.9\.1'
+            $Html | Should -Match 'Module v0\.10\.0'
             $Html | Should -Match 'data-psi-theme-value>Auto</span>'
             $Html | Should -Match '<footer class="psi-footer">'
         }

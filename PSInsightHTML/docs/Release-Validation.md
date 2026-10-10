@@ -30,7 +30,7 @@ if ($ParseErrors.Count -gt 0) {
 }
 ```
 
-Then import the manifest and verify the patch version and public surface:
+Then import the manifest and verify the release version and public surface:
 
 ```powershell
 $ManifestPath = Join-Path $ModuleRoot 'PSInsightHTML.psd1'
@@ -39,7 +39,7 @@ $Module = Get-Module PSInsightHTML
 $Commands = @(Get-Command -Module PSInsightHTML -CommandType Function)
 $Module.Version.ToString()
 $Commands.Count
-if ($Module.Version.ToString() -ne '0.9.1') { throw 'Unexpected module version.' }
+if ($Module.Version.ToString() -ne '0.10.0') { throw 'Unexpected module version.' }
 if ($Commands.Count -ne 30) { throw 'Unexpected exported command count.' }
 ```
 

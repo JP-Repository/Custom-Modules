@@ -1,6 +1,6 @@
 @{
     RootModule        = 'PSInsightHTML.psm1'
-    ModuleVersion     = '0.9.1'
+    ModuleVersion     = '0.10.0'
     GUID              = 'E3B5F39D-8C4F-45E0-8F10-BAEF3F36B86A'
     Author            = 'PSInsightHTML'
     CompanyName       = 'PSInsightHTML'

@@ -1,4 +1,4 @@
-# Known limitations - 0.9.1
+# Known limitations - 0.10.0
 
 - Tables are DOM-backed. Large datasets increase standalone HTML size, browser memory use, initial rendering time, and client-side filter/sort cost. The 5,000-row sample is a scale demonstration, not a guarantee for arbitrary dataset sizes.
 - Assessment objects share their section and finding objects with the composed report. Treat an assessment as immutable after `Add-PSIAssessment`.

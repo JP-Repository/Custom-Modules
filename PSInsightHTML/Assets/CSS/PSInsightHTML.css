@@ -99,14 +99,16 @@ h1 { font-size: clamp(27px, 3.4vw, 36px); }
 .psi-theme-control button, .psi-export-trigger, .psi-table-pagination button, .psi-dialog-actions button, .psi-dialog-pagination button { min-height: 34px; border-radius: 6px; }
 .psi-theme-control button[aria-pressed="true"] { color: var(--psi-accent); border-color: var(--psi-accent); background: var(--psi-surface-interactive); }
 
-.psi-assessment-nav { position: sticky; top: 0; z-index: 30; flex-wrap: nowrap; gap: 3px; margin-top: 12px; padding: 6px; overflow-x: auto; background: var(--psi-surface-elevated); border-color: var(--psi-border-strong); border-radius: 9px; box-shadow: var(--psi-shadow); scrollbar-width: thin; }
-.psi-assessment-nav a { flex: 0 0 auto; padding: 8px 11px; color: var(--psi-text-secondary); border-radius: 5px; font-size: 12px; white-space: nowrap; }
-.psi-assessment-nav a[aria-current="location"] { color: var(--psi-accent); background: var(--psi-surface-interactive); box-shadow: inset 0 -2px var(--psi-accent); }
+.psi-navigation-stack { position: sticky; top: 0; z-index: 30; margin-top: 12px; padding: 4px 0; background: var(--psi-page); }
+.psi-navigation-stack .psi-report-nav, .psi-navigation-stack .psi-assessment-nav { flex-wrap: nowrap; gap: 3px; margin-top: 0; padding: 6px; overflow-x: auto; background: var(--psi-surface-elevated); border-color: var(--psi-border-strong); border-radius: 9px; box-shadow: var(--psi-shadow); scrollbar-width: thin; }
+.psi-navigation-stack .psi-report-nav a, .psi-navigation-stack .psi-assessment-nav a { flex: 0 0 auto; padding: 8px 11px; color: var(--psi-text-secondary); border-radius: 5px; font-size: 12px; white-space: nowrap; }
+.psi-navigation-stack .psi-report-nav a[aria-current="location"], .psi-navigation-stack .psi-assessment-nav a[aria-current="location"] { color: var(--psi-accent); background: var(--psi-surface-interactive); box-shadow: inset 0 -2px var(--psi-accent); }
+.psi-navigation-stack .psi-assessment-nav { position: static; z-index: auto; }
 .psi-assessment-nav a:hover, .psi-report-nav a:hover { color: var(--psi-accent-hover); background: var(--psi-surface-interactive); }
 .psi-section-nav-details { margin-top: 7px; padding: 7px 10px; background: transparent; border: 0; border-radius: 6px; }
 .psi-section-nav-details summary { width: fit-content; color: var(--psi-text-muted); }
-.psi-section-nav-details .psi-report-nav { margin-top: 8px; padding: 8px; background: var(--psi-surface); border: 1px solid var(--psi-border); }
-.psi-section { margin-top: 25px; scroll-margin-top: 84px; }
+.psi-navigation-stack .psi-section-nav-details .psi-report-nav { margin-top: 8px; padding: 8px; background: var(--psi-surface); border: 1px solid var(--psi-border); box-shadow: none; }
+.psi-section { margin-top: 25px; scroll-margin-top: var(--psi-navigation-offset, 84px); }
 .psi-section h2 { margin: 0 0 11px; padding: 0 0 8px; color: var(--psi-text); border: 0; border-bottom: 1px solid var(--psi-border-strong); font-size: 19px; font-weight: 720; line-height: 1.3; }
 .psi-row { gap: 10px; }
 .psi-row + .psi-row { margin-top: 10px; }
@@ -117,14 +119,19 @@ h1 { font-size: clamp(27px, 3.4vw, 36px); }
 .psi-section[data-psi-overview] .psi-row[data-psi-overview-row="4"] .psi-text { padding: 7px 0 4px; background: transparent; border: 0; font-weight: 700; }
 
 .psi-kpi-card, .psi-insight-card, .psi-status-panel, .psi-alert, .psi-recommendation, .psi-finding-card, .psi-table-card, .psi-chart-card, .psi-keyvalue-card { border-radius: 9px; box-shadow: none; }
-.psi-kpi-card { min-height: 0; padding: 14px 15px; border-top-width: 2px; }
+.psi-kpi-card { min-height: 0; padding: 14px 15px; border-top-width: 2px; transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease; }
 .psi-kpi-icon { top: 13px; right: 14px; }
 .psi-kpi-icon .psi-icon, .psi-insight-icon .psi-icon { width: 18px; height: 18px; }
 .psi-kpi-title { padding-right: 24px; color: var(--psi-text-secondary); font-size: 12px; }
 .psi-kpi-value { margin: 7px 0 0; font-size: clamp(22px, 2.5vw, 28px); font-variant-numeric: tabular-nums; overflow-wrap: normal; }
 .psi-kpi-subtitle, .psi-kpi-trend { margin-top: 5px; line-height: 1.4; }
 .psi-kpi-drill-hint { margin-top: 9px; }
-.psi-kpi-clickable:hover, .psi-insight-clickable:hover { transform: translateY(-1px); background: var(--psi-surface-interactive); box-shadow: var(--psi-shadow); }
+.psi-insight-clickable:hover { transform: translateY(-1px); background: var(--psi-surface-interactive); box-shadow: var(--psi-shadow); }
+.psi-kpi-clickable:focus-visible { transform: translateY(-2px); background: var(--psi-surface-interactive); box-shadow: var(--psi-shadow); }
+@media (hover: hover) and (pointer: fine) {
+  .psi-kpi-card:hover { z-index: 1; transform: translateY(-2px); box-shadow: var(--psi-shadow); }
+  .psi-kpi-clickable:hover { background: var(--psi-surface-interactive); }
+}
 .psi-section[data-psi-overview] .psi-row[data-psi-overview-row="3"] { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .psi-section[data-psi-overview] .psi-row[data-psi-overview-row="5"] { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .psi-section[data-psi-overview] .psi-row[data-psi-overview-row="3"] > .psi-kpi-card,
@@ -148,7 +155,10 @@ h1 { font-size: clamp(27px, 3.4vw, 36px); }
 .psi-finding-card h3 { margin-top: 9px; font-size: 15px; }
 .psi-finding-description { margin-top: 5px; color: var(--psi-text-secondary); font-size: 13px; }
 .psi-finding-details { gap: 9px 18px; margin-top: 11px; }
-.psi-finding-recommendation, .psi-finding-footer { margin-top: 11px; padding-top: 10px; }
+.psi-finding-recommendation { margin-top: 11px; padding: 10px 12px; border-radius: 6px; }
+.psi-findings-explorer { gap: 10px 18px; margin-top: 14px; padding: 10px 12px; border-radius: 7px; }
+.psi-findings-explorer-control select { min-height: 34px; border-radius: 6px; }
+.psi-finding-footer { margin-top: 11px; padding-top: 10px; }
 .psi-finding-evidence { padding: 6px 9px; background: var(--psi-surface-subtle); border-radius: 5px; }
 .psi-status-badge { padding: 3px 7px; border-radius: 4px; font-size: 10px; letter-spacing: .01em; }
 
@@ -214,14 +224,13 @@ h1 { font-size: clamp(27px, 3.4vw, 36px); }
 .psi-dialog-table th { position: sticky; top: 0; z-index: 1; padding: 9px 11px; }
 .psi-dialog-pagination { margin: 9px 0 0; }
 
-.psi-table-filter-disclosure summary:focus-visible, .psi-dialog-filter-disclosure summary:focus-visible, .psi-assessment-nav a:focus-visible, .psi-section-nav-details summary:focus-visible,
+.psi-table-filter-disclosure summary:focus-visible, .psi-dialog-filter-disclosure summary:focus-visible, .psi-report-nav a:focus-visible, .psi-assessment-nav a:focus-visible, .psi-section-nav-details summary:focus-visible,
 .psi-theme-control button:focus-visible, .psi-export-trigger:focus-visible, .psi-filter-control select:focus-visible,
 .psi-filter-chip:focus-visible, .psi-dialog-filter select:focus-visible, .psi-dialog-close:focus-visible { outline: 2px solid var(--psi-focus); outline-offset: 2px; }
 @media (max-width: 760px) {
   .psi-shell { width: min(100% - 24px, 1240px); margin-top: 14px; }
   .psi-header { padding: 18px; }
-  .psi-assessment-nav { top: 0; }
-  .psi-section { scroll-margin-top: 76px; }
+  .psi-navigation-stack { top: 0; }
   .psi-table-toolbar > .psi-table-search { max-width: none; }
   .psi-table-filter-disclosure .psi-table-filterbar { position: static; width: min(100%, calc(100vw - 44px)); margin-top: 5px; max-height: 42vh; }
   .psi-dialog-filters { position: static; width: min(100%, calc(100vw - 54px)); margin-top: 5px; max-height: 42vh; }
@@ -233,6 +242,10 @@ h1 { font-size: clamp(27px, 3.4vw, 36px); }
   .psi-table-heading { gap: 4px; }
   .psi-table-card, .psi-chart-card { padding: 12px; }
 }
+@media (prefers-reduced-motion: reduce) {
+  .psi-kpi-card { transition: none; }
+  .psi-kpi-card:hover, .psi-kpi-clickable:focus-visible { transform: none; }
+}
 @media print {
   :root, [data-theme] {
     color-scheme: light;
@@ -241,9 +254,11 @@ h1 { font-size: clamp(27px, 3.4vw, 36px); }
     --psi-text-muted: #475666; --psi-border: #b7c0c9; --psi-border-strong: #778491;
     --psi-shadow: none; --psi-shadow-elevated: none;
   }
-  .psi-table-toolbar, .psi-active-filter-row, .psi-assessment-nav, .psi-section-nav-details, .psi-report-nav,
+  .psi-table-toolbar, .psi-active-filter-row, .psi-navigation-stack, .psi-assessment-nav, .psi-section-nav-details, .psi-report-nav, .psi-findings-explorer,
   .psi-theme-control, .psi-dialog-backdrop { display: none !important; }
   .psi-header, .psi-kpi-card, .psi-insight-card, .psi-finding-card, .psi-table-card, .psi-chart-card { box-shadow: none !important; }
+  .psi-kpi-card { transform: none !important; transition: none !important; }
+  .psi-finding-recommendation { background: transparent !important; border-color: var(--psi-border-strong) !important; border-left-color: var(--psi-component-status) !important; }
   .psi-status-badge { background: transparent !important; border: 1px solid currentColor; }
   .psi-table-scroll { overflow: visible; }
   .psi-table-card table { min-width: 0; width: 100%; }

@@ -28,6 +28,74 @@
     button.addEventListener('click', function () { setTheme(button.getAttribute('data-psi-theme'), true); });
   });
 
+  var navigationStack = document.querySelector('[data-psi-navigation-stack]');
+  function navigationThreshold() {
+    var height = navigationStack ? Math.ceil(navigationStack.getBoundingClientRect().height) : 0;
+    var offset = height + 12;
+    root.style.setProperty('--psi-navigation-offset', offset + 'px');
+    return offset;
+  }
+
+  function revealNavigationLink(navigation, link) {
+    if (!navigation || !link) { return; }
+    var left = link.offsetLeft;
+    var right = left + link.offsetWidth;
+    if (left < navigation.scrollLeft) { navigation.scrollLeft = left; }
+    else if (right > navigation.scrollLeft + navigation.clientWidth) {
+      navigation.scrollLeft = right - navigation.clientWidth;
+    }
+  }
+
+  var reportNav = document.querySelector('.psi-report-nav');
+  if (reportNav) {
+    var reportLinks = Array.prototype.slice.call(reportNav.querySelectorAll('[data-psi-nav-section]'));
+    var reportSections = reportLinks.map(function (link) {
+      return document.getElementById(link.getAttribute('data-psi-nav-section'));
+    }).filter(function (section) { return !!section; });
+    var sectionNavUpdatePending = false;
+    function setActiveReportSection(sectionId) {
+      reportLinks.forEach(function (link) {
+        if (link.getAttribute('data-psi-nav-section') === sectionId) {
+          link.setAttribute('aria-current', 'location');
+          revealNavigationLink(reportNav, link);
+        } else { link.removeAttribute('aria-current'); }
+      });
+    }
+    function updateReportNavigation() {
+      sectionNavUpdatePending = false;
+      var current = reportSections.length ? reportSections[0] : null;
+      var threshold = navigationThreshold();
+      reportSections.forEach(function (section) {
+        if (section.getBoundingClientRect().top <= threshold) { current = section; }
+      });
+      if (reportSections.length && window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 2) {
+        current = reportSections[reportSections.length - 1];
+      }
+      if (current) { setActiveReportSection(current.id); }
+    }
+    function scheduleReportNavigation() {
+      if (sectionNavUpdatePending) { return; }
+      sectionNavUpdatePending = true;
+      window.requestAnimationFrame(updateReportNavigation);
+    }
+    reportLinks.forEach(function (link) {
+      link.addEventListener('click', function () {
+        setActiveReportSection(link.getAttribute('data-psi-nav-section'));
+        scheduleReportNavigation();
+      });
+    });
+    window.addEventListener('scroll', scheduleReportNavigation, { passive: true });
+    window.addEventListener('resize', scheduleReportNavigation);
+    window.addEventListener('hashchange', scheduleReportNavigation);
+    window.addEventListener('psi:layout-change', scheduleReportNavigation);
+    if (navigationStack) {
+      navigationStack.querySelectorAll('details').forEach(function (details) {
+        details.addEventListener('toggle', scheduleReportNavigation);
+      });
+    }
+    updateReportNavigation();
+  }
+
   var assessmentNav = document.querySelector('.psi-assessment-nav');
   if (assessmentNav) {
     var assessmentLinks = Array.prototype.slice.call(assessmentNav.querySelectorAll('[data-psi-nav-assessment]'));
@@ -36,14 +104,16 @@
     function updateAssessmentNavigation() {
       navUpdatePending = false;
       var current = assessmentSections.length ? assessmentSections[0] : null;
+      var threshold = navigationThreshold();
       assessmentSections.forEach(function (section) {
-        if (section.getBoundingClientRect().top <= 132) { current = section; }
+        if (section.getBoundingClientRect().top <= threshold) { current = section; }
       });
       var currentId = current && current.hasAttribute('data-psi-overview') ? 'overview' :
         (current ? current.getAttribute('data-psi-assessment-key') : null);
       assessmentLinks.forEach(function (link) {
         if (link.getAttribute('data-psi-nav-assessment') === currentId) {
           link.setAttribute('aria-current', 'location');
+          revealNavigationLink(assessmentNav, link);
         } else { link.removeAttribute('aria-current'); }
       });
     }
@@ -55,8 +125,159 @@
     window.addEventListener('scroll', scheduleAssessmentNavigation, { passive: true });
     window.addEventListener('resize', scheduleAssessmentNavigation);
     window.addEventListener('hashchange', scheduleAssessmentNavigation);
+    window.addEventListener('psi:layout-change', scheduleAssessmentNavigation);
+    if (navigationStack) {
+      navigationStack.querySelectorAll('details').forEach(function (details) {
+        details.addEventListener('toggle', scheduleAssessmentNavigation);
+      });
+    }
     updateAssessmentNavigation();
   }
+
+  var findingStatusOrder = ['Critical', 'Warning', 'Unknown', 'NotChecked', 'Informational', 'Healthy', 'Neutral'];
+
+  function findingStatusRank(status) {
+    var rank = findingStatusOrder.indexOf(status);
+    return rank === -1 ? findingStatusOrder.indexOf('Unknown') : rank;
+  }
+
+  function findingStatusClass(status) {
+    return status === 'NotChecked' ? 'not-checked' : String(status || 'Unknown').toLowerCase();
+  }
+
+  function updateFindingRows(section) {
+    Array.prototype.slice.call(section.querySelectorAll('.psi-row')).forEach(function (row) {
+      var components = Array.prototype.slice.call(row.children);
+      var findingCards = components.filter(function (component) { return component.hasAttribute('data-psi-finding-card'); });
+      if (!findingCards.length) { return; }
+      var hasUnrelatedContent = components.some(function (component) { return !component.hasAttribute('data-psi-finding-card'); });
+      var hideRow = !hasUnrelatedContent && findingCards.every(function (card) { return card.hidden; });
+      if (hideRow) {
+        row.hidden = true;
+        row.setAttribute('data-psi-finding-row-hidden', 'true');
+      } else if (row.hasAttribute('data-psi-finding-row-hidden')) {
+        row.hidden = false;
+        row.removeAttribute('data-psi-finding-row-hidden');
+      }
+    });
+  }
+
+  function initializeFindingsExplorer(section, sectionIndex) {
+    var cards = Array.prototype.slice.call(section.querySelectorAll('[data-psi-finding-card]'));
+    if (cards.length < 2) { return; }
+    var groups = [];
+    cards.forEach(function (card) {
+      var rawValue = card.getAttribute('data-psi-affected-object') || '';
+      var value = rawValue.trim() ? rawValue : '';
+      var group = groups.filter(function (item) { return item.value === value; })[0];
+      if (!group) {
+        group = { value: value, label: value || 'Unspecified', cards: [], priority: findingStatusOrder.length };
+        groups.push(group);
+      }
+      group.cards.push(card);
+      group.priority = Math.min(group.priority, findingStatusRank(card.getAttribute('data-psi-finding-status')));
+    });
+    var distinctNonEmpty = groups.filter(function (group) { return group.value !== ''; });
+    if (distinctNonEmpty.length < 2) { return; }
+    groups.sort(function (left, right) {
+      if (left.priority !== right.priority) { return left.priority - right.priority; }
+      if (left.cards.length !== right.cards.length) { return right.cards.length - left.cards.length; }
+      return left.label.localeCompare(right.label, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+    var explorer = document.createElement('div');
+    explorer.className = 'psi-findings-explorer';
+    explorer.setAttribute('data-psi-findings-explorer', 'true');
+    explorer.setAttribute('role', 'group');
+    explorer.setAttribute('aria-label', 'Findings explorer');
+    var control = document.createElement('label');
+    control.className = 'psi-findings-explorer-control';
+    var caption = document.createElement('span');
+    caption.textContent = 'Affected object';
+    var select = document.createElement('select');
+    select.setAttribute('data-psi-finding-select', 'true');
+    groups.forEach(function (group, groupIndex) {
+      var option = document.createElement('option');
+      option.value = String(groupIndex);
+      option.textContent = group.label + ' (' + group.cards.length + ')';
+      select.appendChild(option);
+    });
+    var allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = 'All findings (' + cards.length + ')';
+    select.appendChild(allOption);
+    control.appendChild(caption);
+    control.appendChild(select);
+
+    var summaryId = (section.id || 'psi-section-' + sectionIndex) + '-findings-summary';
+    var summary = document.createElement('div');
+    summary.className = 'psi-findings-explorer-summary';
+    summary.id = summaryId;
+    summary.setAttribute('data-psi-finding-summary', 'true');
+    summary.setAttribute('aria-live', 'polite');
+    summary.setAttribute('aria-atomic', 'true');
+    select.setAttribute('aria-describedby', summaryId);
+    var countSummary = document.createElement('span');
+    countSummary.setAttribute('data-psi-finding-count', 'true');
+    var statusSummary = document.createElement('span');
+    statusSummary.className = 'psi-findings-status-summary';
+    statusSummary.setAttribute('data-psi-finding-status-summary', 'true');
+    summary.appendChild(countSummary);
+    summary.appendChild(statusSummary);
+    explorer.appendChild(control);
+    explorer.appendChild(summary);
+
+    var firstRow = cards[0].closest('.psi-row');
+    section.insertBefore(explorer, firstRow || cards[0]);
+
+    function updateSummary(visibleCards, showAll) {
+      countSummary.textContent = showAll ? 'Showing all ' + cards.length + ' findings' :
+        'Showing ' + visibleCards.length + ' of ' + cards.length + ' findings';
+      var counts = {};
+      visibleCards.forEach(function (card) {
+        var status = card.getAttribute('data-psi-finding-status') || 'Unknown';
+        counts[status] = (counts[status] || 0) + 1;
+      });
+      statusSummary.textContent = '';
+      var represented = findingStatusOrder.filter(function (status) { return counts[status]; });
+      represented.forEach(function (status, statusIndex) {
+        if (statusIndex) {
+          var separator = document.createElement('span');
+          separator.className = 'psi-findings-status-separator';
+          separator.textContent = '\u00b7';
+          separator.setAttribute('aria-hidden', 'true');
+          statusSummary.appendChild(separator);
+        }
+        var statusCount = document.createElement('span');
+        statusCount.className = 'psi-findings-status-count psi-status-' + findingStatusClass(status);
+        statusCount.textContent = counts[status] + ' ' + status;
+        statusSummary.appendChild(statusCount);
+      });
+    }
+
+    function applyFindingSelection() {
+      var showAll = select.value === 'all';
+      var selectedGroup = showAll ? null : groups[Number(select.value)];
+      var visibleCards = [];
+      cards.forEach(function (card) {
+        var rawValue = card.getAttribute('data-psi-affected-object') || '';
+        var value = rawValue.trim() ? rawValue : '';
+        var show = showAll || (selectedGroup && value === selectedGroup.value);
+        card.hidden = !show;
+        if (show) { visibleCards.push(card); }
+      });
+      updateFindingRows(section);
+      updateSummary(visibleCards, showAll);
+      window.dispatchEvent(new CustomEvent('psi:layout-change'));
+    }
+
+    select.addEventListener('change', applyFindingSelection);
+    applyFindingSelection();
+  }
+
+  Array.prototype.slice.call(document.querySelectorAll('.psi-section')).forEach(function (section, sectionIndex) {
+    initializeFindingsExplorer(section, sectionIndex);
+  });
 
   document.querySelectorAll('[data-psi-filter-action]').forEach(function (trigger) {
     trigger.addEventListener('click', function () {

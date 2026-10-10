@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0
+
+- Added sticky generic report section navigation with active-section tracking, accessible current-location state, dynamic anchor offsets, and composed-assessment navigation support.
+- Refined KPI interaction feedback with a restrained lift, keyboard focus treatment, pointer-aware hover behavior, reduced-motion support, and static print output.
+- Added severity-aware Finding recommendation treatments using the existing canonical status tokens and print-readable borders.
+- Added a generic client-side Findings Explorer based on `Finding.AffectedObject`, including priority-based defaults, counts, status summaries, `Unspecified` and `All findings` options, independent section controls, accessible native selection, and complete print output.
+- Preserved the existing public command surface, Finding schema, standalone HTML model, and no-JavaScript fallback.
+
 ## 0.9.1
 
 - Made executable PowerShell source and embedded CSS/JavaScript runtime assets ASCII-safe for Windows PowerShell 5.1 decoding.

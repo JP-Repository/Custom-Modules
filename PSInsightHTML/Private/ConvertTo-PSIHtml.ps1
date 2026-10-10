@@ -48,7 +48,7 @@ function ConvertTo-PSIHtml {
     foreach ($Section in $SectionsProperty.Value) {
         $SectionTitle = ConvertTo-PSIHtmlEncoded -Value $Section.Title
         $SectionId = "psi-section-$SectionIndex"
-        [void] $NavigationMarkup.AppendLine("      <a href=`"#$SectionId`">$SectionTitle</a>")
+        [void] $NavigationMarkup.AppendLine("      <a data-psi-nav-section=`"$SectionId`" href=`"#$SectionId`">$SectionTitle</a>")
         $IsOverview = (Get-PSIProperty -InputObject $Section -Name 'IsOverview' -DefaultValue $false) -eq $true
         $AssessmentId = [string] (Get-PSIProperty -InputObject $Section -Name 'AssessmentId')
         $SectionContext = ''
@@ -282,6 +282,7 @@ function ConvertTo-PSIHtml {
                         $FindingCategory = [string] (Get-PSIProperty -InputObject $Properties -Name 'Category')
                         $FindingDescription = [string] (Get-PSIProperty -InputObject $Properties -Name 'Description')
                         $FindingAffectedObject = [string] (Get-PSIProperty -InputObject $Properties -Name 'AffectedObject')
+                        $FindingAffectedObjectAttribute = ConvertTo-PSIHtmlEncoded -Value $FindingAffectedObject
                         $FindingImpact = [string] (Get-PSIProperty -InputObject $Properties -Name 'Impact')
                         $FindingRecommendation = [string] (Get-PSIProperty -InputObject $Properties -Name 'Recommendation')
                         $FindingRuleId = [string] (Get-PSIProperty -InputObject $Properties -Name 'RuleId')
@@ -296,7 +297,7 @@ function ConvertTo-PSIHtml {
                             Write-Warning "Finding '$FindingTitleText' references missing evidence table '$($EvidenceDefinition.tableId)'; its evidence action was omitted."
                             $EvidenceDefinition = $null
                         }
-                        [void] $SectionMarkup.AppendLine("          <article class=`"psi-finding-card psi-status-$StatusClass`" id=`"$FindingDomId`" data-status=`"$Status`">")
+                        [void] $SectionMarkup.AppendLine("          <article class=`"psi-finding-card psi-status-$StatusClass`" id=`"$FindingDomId`" data-status=`"$Status`" data-psi-finding-card data-psi-affected-object=`"$FindingAffectedObjectAttribute`" data-psi-finding-status=`"$Status`">")
                         [void] $SectionMarkup.AppendLine("            <div class=`"psi-finding-heading`"><span class=`"psi-status-badge psi-status-$StatusClass`">$Status</span>")
                         if (-not [string]::IsNullOrWhiteSpace($FindingCategory)) {
                             [void] $SectionMarkup.AppendLine('              <span class="psi-finding-category">' + (ConvertTo-PSIHtmlEncoded -Value $FindingCategory) + '</span>')
@@ -692,19 +693,23 @@ function ConvertTo-PSIHtml {
 
     if ($null -ne $Report.PSObject.Properties['Assessments'] -and $Report.Assessments.Count -gt 0) {
         $NavigationContainerMarkup = @"
-    <nav class="psi-assessment-nav" aria-label="Assessment groups">
+    <div class="psi-navigation-stack" data-psi-navigation-stack>
+      <nav class="psi-assessment-nav" aria-label="Assessment groups">
 $($AssessmentNavigationMarkup.ToString())    </nav>
-    <details class="psi-section-nav-details">
-      <summary>All sections ($($SectionsProperty.Value.Count))</summary>
-      <nav class="psi-report-nav" aria-label="Report sections">
-$($NavigationMarkup.ToString())      </nav>
-    </details>
+      <details class="psi-section-nav-details">
+        <summary>All sections ($($SectionsProperty.Value.Count))</summary>
+        <nav class="psi-report-nav" aria-label="Report sections">
+$($NavigationMarkup.ToString())        </nav>
+      </details>
+    </div>
 "@
     }
     else {
         $NavigationContainerMarkup = @"
-    <nav class="psi-report-nav" aria-label="Report sections">
-$($NavigationMarkup.ToString())    </nav>
+    <div class="psi-navigation-stack" data-psi-navigation-stack>
+      <nav class="psi-report-nav" aria-label="Report sections">
+$($NavigationMarkup.ToString())      </nav>
+    </div>
 "@
     }
 
