@@ -54,11 +54,11 @@ Describe 'PSInsightHTML Windows PowerShell 5.1 source compatibility' {
         $UnexpectedAssets | Should -BeNullOrEmpty
     }
 
-    It 'imports version 0.10.0 and retains exactly thirty public functions' {
+    It 'imports version 0.10.0 and retains exactly thirty-two public functions' {
         $Module = Get-Module PSInsightHTML
         $Module | Should -Not -BeNullOrEmpty
         $Module.Version.ToString() | Should -Be '0.10.0'
-        @(Get-Command -Module PSInsightHTML -CommandType Function).Count | Should -Be 30
+        @(Get-Command -Module PSInsightHTML -CommandType Function).Count | Should -Be 43
     }
 
     It 'renders the evidence hint with a browser-decoded right arrow' {

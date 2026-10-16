@@ -14,6 +14,9 @@ function ConvertTo-PSIHtml {
         throw 'The supplied object is not a valid PSInsightHTML report. Sections must be a List[object].'
     }
     $TableIds = Assert-PSIReportIds -Sections $SectionsProperty.Value
+    if ($null -ne $Report.PSObject.Properties['ApplicationModel']) {
+        [void] (Assert-PSIApplicationModel -Model $Report.ApplicationModel)
+    }
 
     $Title = ConvertTo-PSIHtmlEncoded -Value $Report.Title
     $Subtitle = ConvertTo-PSIHtmlEncoded -Value $Report.Subtitle
@@ -21,6 +24,16 @@ function ConvertTo-PSIHtml {
     $Theme = [string] $Report.Theme
     if ($Theme -notin @('Light', 'Dark', 'Auto')) {
         throw "Theme must be Light, Dark, or Auto. Found '$Theme'."
+    }
+    $Layout = [string] (Get-PSIProperty -InputObject $Report -Name 'Layout' -DefaultValue 'Report')
+    if ($Layout -notin @('Report', 'Application')) { throw "Unknown report layout '$Layout'." }
+    $ReportViews = Get-PSIProperty -InputObject $Report -Name 'Views' -DefaultValue @()
+    $IsMultiView = $Layout -eq 'Application' -and $null -ne $ReportViews -and $ReportViews.Count -gt 0
+    if ($IsMultiView -and $null -ne $Report.PSObject.Properties['ApplicationModel']) {
+        [void] (Assert-PSIApplicationLinks -Report $Report)
+    }
+    if ($null -ne $Report.PSObject.Properties['ApplicationAssessment']) {
+        [void] (Resolve-PSIAssessmentPosture -Assessment $Report.ApplicationAssessment -Model $Report.ApplicationModel)
     }
     $ModuleVersion = ConvertTo-PSIHtmlEncoded -Value $Report.ModuleVersion
 
@@ -34,9 +47,14 @@ function ConvertTo-PSIHtml {
         throw "The PSInsightHTML visual stylesheet is missing: '$VisualStylesheetPath'."
     }
     $ThemeStylesheet += "`n" + (Get-Content -LiteralPath $VisualStylesheetPath -Raw -ErrorAction Stop)
+    if ($Layout -eq 'Application') {
+        $AppStylesheetPath = Join-Path -Path $script:ModuleRoot -ChildPath 'Assets/CSS/psi-application.css'
+        $ThemeStylesheet += "`n" + (Get-Content -LiteralPath $AppStylesheetPath -Raw -ErrorAction Stop)
+    }
     $SectionMarkup = [System.Text.StringBuilder]::new()
     $NavigationMarkup = [System.Text.StringBuilder]::new()
     $HasTableComponents = $false
+    $HasSearchableTableComponents = $false
     $HasDrillDownComponents = $false
     $HasInsightComponents = $false
     $SectionIndex = 0
@@ -44,8 +62,43 @@ function ConvertTo-PSIHtml {
     $FindingIndex = 0
     $AssessmentNavigationMarkup = [System.Text.StringBuilder]::new()
     $SeenAssessmentIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $ApplicationNavigation = $null
+    $ApplicationSectionIcons = @{}
+    $OpenViewId = ''
+    $InitialViewId = ''
+    if ($Layout -eq 'Application') {
+        $ApplicationNavigation = Resolve-PSIApplicationNavigation -Report $Report
+        foreach ($Group in $ApplicationNavigation) {
+            foreach ($Item in $Group.Items) {
+                if ($IsMultiView -and $Item.Selected) { $InitialViewId = $Item.Id }
+                if ($Item.Target -and -not $ApplicationSectionIcons.ContainsKey($Item.Target)) {
+                    $ApplicationSectionIcons[$Item.Target] = $Item.Icon
+                }
+            }
+        }
+        if ($IsMultiView) {
+            $ViewIcons = @{}
+            foreach ($View in $ReportViews) { $ViewIcons[[string] $View.Id] = [string] $View.Icon }
+            for ($Index = 0; $Index -lt $SectionsProperty.Value.Count; $Index++) {
+                $ViewId = [string] $SectionsProperty.Value[$Index].ViewId
+                $ApplicationSectionIcons["psi-section-$Index"] = $ViewIcons[$ViewId]
+            }
+        }
+    }
 
     foreach ($Section in $SectionsProperty.Value) {
+        if ($IsMultiView) {
+            $CurrentViewId = [string] $Section.ViewId
+            if ($CurrentViewId -cne $OpenViewId) {
+                if ($OpenViewId) { [void] $SectionMarkup.AppendLine('      </section>') }
+                $View = @($ReportViews | Where-Object { $_.Id -ceq $CurrentViewId })[0]
+                $SafeViewTitle = ConvertTo-PSIHtmlEncoded -Value $View.Title
+                $SafeViewSubtitle = ConvertTo-PSIHtmlEncoded -Value $View.Subtitle
+                $Hidden = if ($CurrentViewId -cne $InitialViewId) { ' hidden' } else { '' }
+                [void] $SectionMarkup.AppendLine("      <section class=`"psi-app-view`" id=`"psi-view-$CurrentViewId`" data-psi-app-view=`"$CurrentViewId`" data-psi-view-label=`"$SafeViewTitle`" data-psi-view-description=`"$SafeViewSubtitle`" aria-label=`"$SafeViewTitle workspace`" tabindex=`"-1`"$Hidden>")
+                $OpenViewId = $CurrentViewId
+            }
+        }
         $SectionTitle = ConvertTo-PSIHtmlEncoded -Value $Section.Title
         $SectionId = "psi-section-$SectionIndex"
         [void] $NavigationMarkup.AppendLine("      <a data-psi-nav-section=`"$SectionId`" href=`"#$SectionId`">$SectionTitle</a>")
@@ -67,7 +120,14 @@ function ConvertTo-PSIHtml {
             }
         }
         [void] $SectionMarkup.AppendLine("      <section class=`"psi-section`" id=`"$SectionId`" aria-label=`"$SectionTitle`"$SectionContext>")
-        [void] $SectionMarkup.AppendLine("        <h2>$SectionTitle</h2>")
+        if ($Layout -eq 'Application') {
+            $SectionIcon = if ($ApplicationSectionIcons.ContainsKey($SectionId)) {
+                '<span class="psi-app-section-icon">' + (Get-PSIIcon -Name $ApplicationSectionIcons[$SectionId] -Size 21 -Strict) + '</span>'
+            }
+            else { '' }
+            [void] $SectionMarkup.AppendLine("        <h2>$SectionIcon<span>$SectionTitle</span></h2>")
+        }
+        else { [void] $SectionMarkup.AppendLine("        <h2>$SectionTitle</h2>") }
 
         $RowsProperty = $Section.PSObject.Properties['Rows']
         if ($null -eq $RowsProperty -or $RowsProperty.Value -isnot [System.Collections.Generic.List[object]]) {
@@ -106,8 +166,24 @@ function ConvertTo-PSIHtml {
                 if ($Status -eq 'NotChecked') {
                     $StatusClass = 'not-checked'
                 }
+                $AppStatusIcon = ''
+                if ($Layout -eq 'Application' -and $Component.Type -in @('Finding', 'Status', 'Alert', 'Recommendation')) {
+                    $StatusIconName = switch ($Status) {
+                        'Healthy' { 'SeveritySuccess' }
+                        'Warning' { 'SeverityWarning' }
+                        'Critical' { 'SeverityError' }
+                        default { 'SeverityInfo' }
+                    }
+                    $AppStatusIcon = '<span class="psi-app-severity-icon">' + (Get-PSIIcon -Name $StatusIconName -Size 20 -Strict) + '</span>'
+                }
 
                 switch ([string] $Component.Type) {
+                    'AssessmentOverview' {
+                        [void] $SectionMarkup.AppendLine((ConvertTo-PSIAssessmentOverviewHtml -Properties $Properties))
+                    }
+                    'Explorer' {
+                        [void] $SectionMarkup.AppendLine((ConvertTo-PSIExplorerHtml -Properties $Properties))
+                    }
                     'Text' {
                         $Text = ConvertTo-PSIHtmlEncoded -Value (Get-PSIProperty -InputObject $Properties -Name 'Text')
                         $Size = [string] (Get-PSIProperty -InputObject $Properties -Name 'Size')
@@ -189,6 +265,7 @@ function ConvertTo-PSIHtml {
                             $KpiIconMarkup = Get-PSIIcon -Name ([string] (Get-PSIProperty -InputObject $Properties -Name 'Icon')) -Size 21
                         }
                         $DrillDown = @((Get-PSIProperty -InputObject $Properties -Name 'DrillDown'))
+                        $KpiToneClass = if ((Get-PSIProperty -InputObject $Properties -Name 'VisualTone') -eq 'Informational') { ' psi-tone-informational' } else { '' }
                         $IsDrillDown = $DrillDown.Count -gt 0 -and $null -ne $DrillDown[0]
                         $HasFilterAction = -not [string]::IsNullOrEmpty($KpiFilterAttribute)
                         if ($IsDrillDown) {
@@ -209,10 +286,10 @@ function ConvertTo-PSIHtml {
                             if ($IsDrillDown) {
                                 $DataAttributes += " data-psi-detail-title=`"$KpiTitle`""
                             }
-                            [void] $SectionMarkup.AppendLine("          <button type=`"button`" class=`"psi-kpi-card psi-kpi-clickable psi-status-$StatusClass`" data-status=`"$Status`" data-action=`"$ActionAttribute`"$DataAttributes aria-label=`"$KpiAccessibleName`" style=`"--psi-component-span: $KpiComponentSpan`">")
+                            [void] $SectionMarkup.AppendLine("          <button type=`"button`" class=`"psi-kpi-card psi-kpi-clickable psi-status-$StatusClass$KpiToneClass`" data-status=`"$Status`" data-action=`"$ActionAttribute`"$DataAttributes aria-label=`"$KpiAccessibleName`" style=`"--psi-component-span: $KpiComponentSpan`">")
                         }
                         else {
-                            [void] $SectionMarkup.AppendLine("          <article class=`"psi-kpi-card psi-status-$StatusClass`" data-status=`"$Status`" data-action=`"$ActionAttribute`" style=`"--psi-component-span: $KpiComponentSpan`">")
+                            [void] $SectionMarkup.AppendLine("          <article class=`"psi-kpi-card psi-status-$StatusClass$KpiToneClass`" data-status=`"$Status`" data-action=`"$ActionAttribute`" style=`"--psi-component-span: $KpiComponentSpan`">")
                         }
                         if ($KpiIconMarkup) {
                             [void] $SectionMarkup.AppendLine("            <span class=`"psi-kpi-icon`">$KpiIconMarkup</span>")
@@ -298,7 +375,7 @@ function ConvertTo-PSIHtml {
                             $EvidenceDefinition = $null
                         }
                         [void] $SectionMarkup.AppendLine("          <article class=`"psi-finding-card psi-status-$StatusClass`" id=`"$FindingDomId`" data-status=`"$Status`" data-psi-finding-card data-psi-affected-object=`"$FindingAffectedObjectAttribute`" data-psi-finding-status=`"$Status`">")
-                        [void] $SectionMarkup.AppendLine("            <div class=`"psi-finding-heading`"><span class=`"psi-status-badge psi-status-$StatusClass`">$Status</span>")
+                        [void] $SectionMarkup.AppendLine("            <div class=`"psi-finding-heading`">$AppStatusIcon<span class=`"psi-status-badge psi-status-$StatusClass`">$Status</span>")
                         if (-not [string]::IsNullOrWhiteSpace($FindingCategory)) {
                             [void] $SectionMarkup.AppendLine('              <span class="psi-finding-category">' + (ConvertTo-PSIHtmlEncoded -Value $FindingCategory) + '</span>')
                         }
@@ -328,7 +405,8 @@ function ConvertTo-PSIHtml {
                                 $EvidenceAttribute = ConvertTo-PSIHtmlEncoded -Value (ConvertTo-Json -InputObject $EvidenceDefinition -Depth 8 -Compress)
                                 $EvidenceDescription = ConvertTo-PSIHtmlEncoded -Value $FindingDescription
                                 $EvidenceName = ConvertTo-PSIHtmlEncoded -Value ("View evidence for $FindingTitleText")
-                                [void] $SectionMarkup.AppendLine("              <button type=`"button`" class=`"psi-finding-evidence`" data-psi-insight=`"$EvidenceAttribute`" data-psi-detail-title=`"$FindingTitle`" data-psi-evidence-description=`"$EvidenceDescription`" aria-label=`"$EvidenceName`">View Evidence $(Get-PSIIcon -Name 'arrow' -Size 15)</button>")
+                                $EvidenceButtonContent = if ($Layout -eq 'Application') { (Get-PSIIcon -Name Document -Size 16 -Strict) + ' View Evidence' } else { 'View Evidence ' + (Get-PSIIcon -Name 'arrow' -Size 15) }
+                                [void] $SectionMarkup.AppendLine("              <button type=`"button`" class=`"psi-finding-evidence`" data-psi-insight=`"$EvidenceAttribute`" data-psi-detail-title=`"$FindingTitle`" data-psi-evidence-description=`"$EvidenceDescription`" aria-label=`"$EvidenceName`">$EvidenceButtonContent</button>")
                             }
                             if (-not [string]::IsNullOrWhiteSpace($FindingRuleId)) {
                                 [void] $SectionMarkup.AppendLine('              <span class="psi-finding-meta">Rule: ' + (ConvertTo-PSIHtmlEncoded -Value $FindingRuleId) + '</span>')
@@ -344,7 +422,8 @@ function ConvertTo-PSIHtml {
                         $Label = ConvertTo-PSIHtmlEncoded -Value (Get-PSIProperty -InputObject $Properties -Name 'Label')
                         $Message = ConvertTo-PSIHtmlEncoded -Value (Get-PSIProperty -InputObject $Properties -Name 'Message')
                         [void] $SectionMarkup.AppendLine("          <div class=`"psi-status-panel psi-status-$StatusClass`" data-status=`"$Status`">")
-                        [void] $SectionMarkup.AppendLine("            <span class=`"psi-status-indicator`" aria-hidden=`"true`"></span>")
+                        if ($Layout -eq 'Application') { [void] $SectionMarkup.AppendLine("            $AppStatusIcon") }
+                        else { [void] $SectionMarkup.AppendLine("            <span class=`"psi-status-indicator`" aria-hidden=`"true`"></span>") }
                         [void] $SectionMarkup.AppendLine("            <div><strong>$Status</strong>")
                         if (-not [string]::IsNullOrWhiteSpace([string] (Get-PSIProperty -InputObject $Properties -Name 'Label'))) {
                             [void] $SectionMarkup.AppendLine("              <span class=`"psi-status-label`">$Label</span>")
@@ -362,7 +441,7 @@ function ConvertTo-PSIHtml {
                         $Timestamp = (Get-PSIProperty -InputObject $Properties -Name 'Timestamp')
                         $Details = (Get-PSIProperty -InputObject $Properties -Name 'Details')
                         [void] $SectionMarkup.AppendLine("          <article class=`"psi-alert psi-status-$StatusClass`" data-status=`"$Status`">")
-                        [void] $SectionMarkup.AppendLine("            <div class=`"psi-alert-heading`"><span class=`"psi-alert-severity`">$Status</span><h3>$AlertTitle</h3></div>")
+                        [void] $SectionMarkup.AppendLine("            <div class=`"psi-alert-heading`">$AppStatusIcon<span class=`"psi-alert-severity`">$Status</span><h3>$AlertTitle</h3></div>")
                         [void] $SectionMarkup.AppendLine("            <p>$AlertMessage</p>")
                         if ($null -ne $Timestamp) {
                             $TimestampText = ConvertTo-PSIHtmlEncoded -Value ([string] $Timestamp)
@@ -388,7 +467,7 @@ function ConvertTo-PSIHtml {
                         $Description = ConvertTo-PSIHtmlEncoded -Value (Get-PSIProperty -InputObject $Properties -Name 'Description')
                         $ActionText = ConvertTo-PSIHtmlEncoded -Value (Get-PSIProperty -InputObject $Properties -Name 'ActionText')
                         [void] $SectionMarkup.AppendLine("          <article class=`"psi-recommendation psi-status-$StatusClass`" data-status=`"$Status`">")
-                        [void] $SectionMarkup.AppendLine("            <span class=`"psi-recommendation-severity`">$Status</span>")
+                        [void] $SectionMarkup.AppendLine("            <span class=`"psi-recommendation-severity`">$AppStatusIcon$Status</span>")
                         [void] $SectionMarkup.AppendLine("            <h3>$RecommendationTitle</h3>")
                         [void] $SectionMarkup.AppendLine("            <p>$Description</p>")
                         if (-not [string]::IsNullOrWhiteSpace([string] (Get-PSIProperty -InputObject $Properties -Name 'ActionText'))) {
@@ -413,6 +492,7 @@ function ConvertTo-PSIHtml {
                         if ($TableData.Count -eq 0 -and $EmptyMessage -eq 'No records match your filters.') { $EmptyMessage = 'No data available.' }
                         $PageSize = [int] (Get-PSIProperty -InputObject $Properties -Name 'PageSize')
                         $SearchEnabled = [bool] (Get-PSIProperty -InputObject $Properties -Name 'EnableSearch')
+                        if ($SearchEnabled) { $HasSearchableTableComponents = $true }
                         $SortingEnabled = [bool] (Get-PSIProperty -InputObject $Properties -Name 'EnableSorting')
                         $PaginationEnabled = [bool] (Get-PSIProperty -InputObject $Properties -Name 'EnablePagination')
                         $ExportEnabled = [bool] (Get-PSIProperty -InputObject $Properties -Name 'EnableExport')
@@ -620,6 +700,7 @@ function ConvertTo-PSIHtml {
         [void] $SectionMarkup.AppendLine('      </section>')
         $SectionIndex++
     }
+    if ($IsMultiView -and $OpenViewId) { [void] $SectionMarkup.AppendLine('      </section>') }
 
     $InteractionScriptPath = Join-Path -Path $script:ModuleRoot -ChildPath 'Assets/JavaScript/psi-interactions.js'
     if (-not (Test-Path -LiteralPath $InteractionScriptPath -PathType Leaf)) {
@@ -685,11 +766,22 @@ function ConvertTo-PSIHtml {
       </section>
     </div>
 '@
-        $DrillDownMarkup = $DrillDownMarkup.Replace('__CLOSE_ICON__', (Get-PSIIcon -Name 'close' -Size 20))
+        $CloseIcon = if ($Layout -eq 'Application') { Get-PSIIcon -Name AppClose -Size 20 -Strict } else { Get-PSIIcon -Name 'close' -Size 20 }
+        $DrillDownMarkup = $DrillDownMarkup.Replace('__CLOSE_ICON__', $CloseIcon)
         $DrillDownMarkup = $DrillDownMarkup.Replace('__EVIDENCE_EXPORT_TOOLBAR__', (Get-PSIExportToolbar -Scope Evidence))
     }
 
-    $ReportExportMarkup = if ($EnableReportPrint) { Get-PSIExportToolbar -Scope Report -Formats @('Print') } else { '' }
+    $ReportExportMarkup = if ($EnableReportPrint) {
+        if ($Layout -eq 'Application') { Get-PSIExportToolbar -Scope Report -Formats @('Print') -UseFluentIcons }
+        else { Get-PSIExportToolbar -Scope Report -Formats @('Print') }
+    } else { '' }
+
+    if ($Layout -eq 'Application') {
+        return ConvertTo-PSIApplicationShell -Report $Report -Styles $ThemeStylesheet -Sections $SectionMarkup.ToString() `
+            -Navigation $ApplicationNavigation -Dialog $DrillDownMarkup -ExportToolbar $ReportExportMarkup `
+            -ExportScript $ExportScript -StatusScript $StatusRegistryScript -InteractionScript $InteractionScript `
+            -TableScript $TableScript -HasTableSearch $HasSearchableTableComponents -IsMultiView $IsMultiView
+    }
 
     if ($null -ne $Report.PSObject.Properties['Assessments'] -and $Report.Assessments.Count -gt 0) {
         $NavigationContainerMarkup = @"

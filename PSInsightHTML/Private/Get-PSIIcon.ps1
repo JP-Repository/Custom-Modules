@@ -7,8 +7,74 @@ function Get-PSIIcon {
 
         [Parameter()]
         [ValidateRange(12, 96)]
-        [int] $Size = 20
+        [int] $Size = 20,
+
+        [Parameter()]
+        [ValidateSet('Regular', 'Filled')]
+        [string] $Variant = 'Regular',
+
+        [Parameter()]
+        [switch] $Strict
     )
+
+    # Curated Fluent SVGs are local and restricted to this fixed role allowlist.
+    # Legacy names below keep their established output.
+    $FluentNames = @{
+        NavigationHome = 'home'
+        NavigationSearch = 'search'
+        Menu = 'navigation'
+        AppSettings = 'settings'
+        ThemeLight = 'weather_sunny'
+        ThemeDark = 'weather_moon'
+        Document = 'document'
+        AppChevron = 'chevron_down'
+        AppClose = 'dismiss'
+        SeverityWarning = 'warning'
+        SeverityError = 'error_circle'
+        SeveritySuccess = 'checkmark_circle'
+        SeverityInfo = 'info'
+        ResourceServer = 'server'
+        SecurityShield = 'shield'
+        Relationship = 'branch_fork'
+        Rules = 'document_bullet_list'
+        Export = 'arrow_download'
+    }
+    if ($FluentNames.ContainsKey($Name)) {
+        $FileName = '{0}_24_{1}.svg' -f $FluentNames[$Name], $Variant.ToLowerInvariant()
+        $IconPath = Join-Path -Path $script:ModuleRoot -ChildPath ('Assets/Icons/Fluent/' + $FileName)
+        if (-not (Test-Path -LiteralPath $IconPath -PathType Leaf)) {
+            if ($Variant -eq 'Filled') {
+                $IconPath = Join-Path -Path $script:ModuleRoot -ChildPath ('Assets/Icons/Fluent/' + $FluentNames[$Name] + '_24_regular.svg')
+            }
+            if (-not (Test-Path -LiteralPath $IconPath -PathType Leaf)) { throw "Curated icon '$Name' is missing." }
+        }
+        $Document = [System.Xml.XmlDocument]::new()
+        $Document.XmlResolver = $null
+        try { $Document.LoadXml((Get-Content -LiteralPath $IconPath -Raw -ErrorAction Stop)) }
+        catch { throw "Curated icon '$Name' is not valid SVG XML: $($_.Exception.Message)" }
+        if ($null -ne $Document.DocumentType -or $null -eq $Document.DocumentElement -or
+            $Document.DocumentElement.LocalName -ne 'svg' -or
+            $Document.DocumentElement.GetAttribute('viewBox') -ne '0 0 24 24') {
+            throw "Curated icon '$Name' contains unsupported SVG markup."
+        }
+        $Paths = [System.Text.StringBuilder]::new()
+        foreach ($Child in $Document.DocumentElement.ChildNodes) {
+            if ($Child.NodeType -eq [System.Xml.XmlNodeType]::Whitespace) { continue }
+            if ($Child.LocalName -ne 'path' -or $Child.NamespaceURI -ne $Document.DocumentElement.NamespaceURI) {
+                throw "Curated icon '$Name' contains unsupported SVG markup."
+            }
+            foreach ($Attribute in $Child.Attributes) {
+                if ($Attribute.LocalName -notin @('d', 'fill')) {
+                    throw "Curated icon '$Name' contains unsupported SVG attributes."
+                }
+            }
+            $PathData = $Child.GetAttribute('d')
+            if ([string]::IsNullOrWhiteSpace($PathData)) { throw "Curated icon '$Name' has an empty path." }
+            [void] $Paths.Append('<path d="' + (ConvertTo-PSIHtmlEncoded -Value $PathData) + '" fill="currentColor"/>')
+        }
+        if ($Paths.Length -eq 0) { throw "Curated icon '$Name' has no paths." }
+        return '<svg class="psi-icon psi-icon-fluent" width="{0}" height="{0}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">{1}</svg>' -f $Size, $Paths.ToString()
+    }
 
     $IconPaths = @{
         'dashboard' = '<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/>'
@@ -37,6 +103,7 @@ function Get-PSIIcon {
     }
 
     if (-not $IconPaths.ContainsKey($Name)) {
+        if ($Strict) { throw "Unknown PSInsightHTML icon '$Name'." }
         $Name = 'dashboard'
     }
 

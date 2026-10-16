@@ -18,6 +18,9 @@ function Add-PSIKPI {
     .PARAMETER Status
     Canonical health or severity status.
 
+    .PARAMETER VisualTone
+    Optional presentation tone. The underlying Status remains unchanged.
+
     .PARAMETER DrillDown
     Optional records for the shared evidence viewer.
 
@@ -47,6 +50,10 @@ function Add-PSIKPI {
 
         [Parameter()]
         [string] $Status = 'Unknown',
+
+        [Parameter()]
+        [ValidateSet('Status','Informational')]
+        [string] $VisualTone = 'Status',
 
         [Parameter()]
         [ValidateRange(1, 12)]
@@ -91,6 +98,7 @@ function Add-PSIKPI {
             Value    = $Value
             Subtitle = $Subtitle
             Status   = Resolve-PSIStatus -Status $Status
+            VisualTone = $VisualTone
             Span     = $Span
             Icon     = $Icon
             Trend    = $Trend

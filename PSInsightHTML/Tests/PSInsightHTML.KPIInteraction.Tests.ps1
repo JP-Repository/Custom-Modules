@@ -56,4 +56,18 @@ Describe 'PSInsightHTML KPI interaction polish' {
         $script:KpiInteractionHtml | Should -Match 'data-action="\{&quot;Type&quot;:&quot;ScrollTo&quot;,&quot;Target&quot;:&quot;psi-section-0&quot;\}"'
         $script:KpiInteractionHtml | Should -Match 'aria-label="View details for Evidence action: 2"'
     }
+
+    It 'allows an informational visual tone without changing the KPI status' {
+        $Report = New-PSIReport -Title 'Coverage presentation' -Layout Application
+        $Report | Add-PSIView -Id overview -Title Overview -Initial | Add-PSISection -Title Metrics | Add-PSIRow |
+            Add-PSIKPI -Title Coverage -Value '80%' -Status Warning -VisualTone Informational | Out-Null
+        $Path = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString() + '.html')
+        try {
+            Export-PSIReport -Report $Report -Path $Path | Out-Null
+            $Html = [System.IO.File]::ReadAllText($Path)
+            $Html | Should -Match 'psi-kpi-card psi-status-warning psi-tone-informational" data-status="Warning"'
+            $Html | Should -Match '\.psi-app-content \.psi-kpi-card\.psi-tone-informational \{ --psi-component-status: var\(--psi-status-info\);'
+        }
+        finally { if (Test-Path -LiteralPath $Path) { Remove-Item -LiteralPath $Path -Force } }
+    }
 }

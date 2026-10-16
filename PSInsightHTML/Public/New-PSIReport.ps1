@@ -29,10 +29,21 @@ function New-PSIReport {
 
         [Parameter()]
         [ValidateSet('Light', 'Dark', 'Auto')]
-        [string] $Theme = 'Light'
+        [string] $Theme = 'Light',
+
+        [Parameter()]
+        [ValidateSet('Report', 'Application')]
+        [string] $Layout = 'Report',
+
+        [Parameter()]
+        [object[]] $NavigationGroups = @()
     )
 
-    [pscustomobject]@{
+    if ($Layout -eq 'Report' -and $NavigationGroups.Count -gt 0) {
+        throw 'NavigationGroups require -Layout Application.'
+    }
+
+    $Report = [pscustomobject]@{
         Title        = $Title
         Subtitle     = $Subtitle
         Theme        = $Theme
@@ -42,4 +53,11 @@ function New-PSIReport {
         Assessments  = [System.Collections.Generic.List[object]]::new()
         Findings     = [System.Collections.Generic.List[object]]::new()
     }
+    if ($Layout -eq 'Application') {
+        $Report | Add-Member -NotePropertyName Layout -NotePropertyValue $Layout
+        $Report | Add-Member -NotePropertyName NavigationGroups -NotePropertyValue @($NavigationGroups)
+        $Report | Add-Member -NotePropertyName Views -NotePropertyValue ([System.Collections.Generic.List[object]]::new())
+        $Report | Add-Member -NotePropertyName ActiveViewId -NotePropertyValue ''
+    }
+    $Report
 }

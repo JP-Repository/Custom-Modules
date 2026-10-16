@@ -56,7 +56,15 @@ function Add-PSISection {
             $Section | Add-Member -NotePropertyName AssessmentName -NotePropertyValue $Report.Name
         }
 
-        $Report.Sections.Add($Section)
+        $ViewId = [string] (Get-PSIProperty -InputObject $Report -Name 'ActiveViewId' -DefaultValue '')
+        if (-not [string]::IsNullOrWhiteSpace($ViewId)) {
+            $View = @($Report.Views | Where-Object { $_.Id -ceq $ViewId })[0]
+            if ($null -eq $View) { throw "Application view '$ViewId' was not found." }
+            $Section | Add-Member -NotePropertyName ViewId -NotePropertyValue $ViewId
+            $Report.Sections.Add($Section)
+            $View.Sections.Add($Section)
+        }
+        else { $Report.Sections.Add($Section) }
         $Report
     }
 }
