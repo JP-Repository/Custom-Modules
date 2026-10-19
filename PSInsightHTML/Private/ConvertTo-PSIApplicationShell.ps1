@@ -12,7 +12,9 @@ function ConvertTo-PSIApplicationShell {
         [Parameter(Mandatory = $true)][string] $InteractionScript,
         [Parameter(Mandatory = $true)][AllowEmptyString()][string] $TableScript,
         [Parameter()][bool] $HasTableSearch = $false,
-        [Parameter()][bool] $IsMultiView = $false
+        [Parameter()][bool] $IsMultiView = $false,
+        [Parameter()][bool] $HasRelationshipComponents = $false,
+        [Parameter()][bool] $EnableReportPrint = $true
     )
 
     $Title = ConvertTo-PSIHtmlEncoded -Value $Report.Title
@@ -55,12 +57,53 @@ function ConvertTo-PSIApplicationShell {
     $License = ConvertTo-PSIHtmlEncoded -Value (Get-Content -LiteralPath (Join-Path $IconRoot 'LICENSE') -Raw -ErrorAction Stop)
     $Notice = ConvertTo-PSIHtmlEncoded -Value (Get-Content -LiteralPath (Join-Path $IconRoot 'NOTICE') -Raw -ErrorAction Stop)
     $AppScript = Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/JavaScript/psi-application.js') -Raw -ErrorAction Stop
+    $RelationshipScript = if ($HasRelationshipComponents) { Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/JavaScript/psi-relationships.js') -Raw -ErrorAction Stop } else { '' }
+    $RelationshipScriptMarkup = if ($HasRelationshipComponents) { "<script>`n$RelationshipScript`n</script>" } else { '' }
+    $PrintProjection = ''
+    $PrintScript = ''
+    if ($EnableReportPrint) {
+        $PrintProjection = ConvertTo-PSIPrintProjection -Report $Report
+        $PrintScript = Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/JavaScript/psi-print.js') -Raw -ErrorAction Stop
+        $AssessmentTarget = [string] (Get-PSIProperty -InputObject (Get-PSIProperty -InputObject $Report -Name 'ApplicationAssessment') -Name 'Target')
+        $FooterIdentity = ConvertTo-PSICssString -Value ($Report.Title + $(if ($AssessmentTarget) { ' | ' + $AssessmentTarget } else { '' }))
+        $FooterVersion = ConvertTo-PSICssString -Value ('PSInsightHTML v' + $Report.ModuleVersion + ' | Page ')
+        $Styles += "`n@media print { @page { @bottom-left { content: `"$FooterIdentity`"; } @bottom-right { content: `"$FooterVersion`" counter(page); } } }"
+    }
     $MenuIcon = Get-PSIIcon -Name Menu -Size 22 -Strict
     $CloseIcon = Get-PSIIcon -Name AppClose -Size 20 -Strict
     $LightIcon = Get-PSIIcon -Name ThemeLight -Size 18 -Strict
     $DarkIcon = Get-PSIIcon -Name ThemeDark -Size 18 -Strict
     $AutoIcon = Get-PSIIcon -Name AppSettings -Size 18 -Strict
     $InfoIcon = Get-PSIIcon -Name SeverityInfo -Size 16 -Strict
+    $GlobalSearchButton = ''
+    $GlobalSearchMarkup = ''
+    $GlobalSearchScript = ''
+    if ($IsMultiView) {
+        $GlobalIcon = Get-PSIIcon -Name NavigationSearch -Size 19 -Strict
+        $SearchTitle = if ($null -ne (Get-PSIProperty -InputObject $Report -Name 'ApplicationAssessment')) { 'Search assessment' } else { 'Search report' }
+        $GlobalSearchButton = '<button type="button" class="psi-app-global-search-trigger" data-psi-global-search-trigger aria-haspopup="dialog" aria-controls="psi-global-search" aria-label="Search all report views and records">' + $GlobalIcon + '<span>' + $SearchTitle + '</span><kbd>Ctrl K</kbd></button>'
+        $SearchIndex = @(Get-PSIApplicationSearchIndex -Report $Report)
+        $IndexJson = (ConvertTo-Json -InputObject $SearchIndex -Depth 4 -Compress).Replace('&','\u0026').Replace('<','\u003c').Replace('>','\u003e').Replace([string][char]0x2028,'\u2028').Replace([string][char]0x2029,'\u2029')
+        $SearchIconMarkup = [System.Text.StringBuilder]::new()
+        foreach ($Entry in @(@('View','Document'),@('Check','Rules'),@('Finding','SeverityWarning'),@('Resource','ResourceServer'),@('Evidence','Document'),@('Exception','SeverityInfo'))) {
+            [void] $SearchIconMarkup.Append('<template data-psi-search-icon="' + $Entry[0] + '">' + (Get-PSIIcon -Name $Entry[1] -Size 19 -Strict) + '</template>')
+        }
+        $GlobalSearchMarkup = @"
+  <script type="application/json" id="psi-global-search-index">$IndexJson</script>
+  $($SearchIconMarkup.ToString())
+  <div class="psi-global-search-backdrop" data-psi-global-search-backdrop hidden>
+    <section class="psi-global-search-dialog" id="psi-global-search" role="dialog" aria-modal="true" aria-labelledby="psi-global-search-title" aria-describedby="psi-global-search-help">
+      <header class="psi-global-search-header"><div><p>Report workspace</p><h2 id="psi-global-search-title">$SearchTitle</h2></div><button type="button" data-psi-global-search-close aria-label="Close search">$CloseIcon</button></header>
+      <div class="psi-global-search-modes" role="group" aria-label="Palette mode"><button type="button" data-psi-global-mode="Search" aria-pressed="true">Search</button><button type="button" data-psi-global-mode="Commands" aria-pressed="false">Commands</button></div>
+      <label class="psi-global-search-input-wrap" for="psi-global-search-input">$GlobalIcon<span class="psi-sr-only">Search views and records or enter a command</span><input id="psi-global-search-input" type="search" data-psi-global-search-input role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="psi-global-search-results" autocomplete="off" placeholder="Find a view, check, finding, resource..."></label>
+      <p class="psi-global-search-summary" data-psi-global-search-summary role="status" aria-live="polite"></p>
+      <div class="psi-global-search-results" id="psi-global-search-results" data-psi-global-search-results role="listbox" aria-label="Search results"></div>
+      <footer id="psi-global-search-help">Up / Down to select &middot; Enter to open &middot; Esc to close &middot; Type &gt; for commands</footer>
+    </section>
+  </div>
+"@
+        $GlobalSearchScript = Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/JavaScript/psi-search.js') -Raw -ErrorAction Stop
+    }
     $SearchButton = if ($HasTableSearch) {
         $SearchIcon = Get-PSIIcon -Name NavigationSearch -Size 19 -Strict
         '<button type="button" class="psi-app-table-search-shortcut" data-psi-app-find-table aria-label="Find in the active view">' + $SearchIcon + '<span>Find in view</span></button>'
@@ -110,7 +153,7 @@ $($NavMarkup.ToString())      </nav>
     <div class="psi-app-body">
       <header class="psi-app-command" id="psi-app-command">
         <div class="psi-app-command-leading"><button type="button" id="psi-app-nav-toggle" class="psi-app-menu-button" data-psi-app-toggle aria-controls="psi-app-navigation" aria-expanded="false" aria-label="Open navigation" title="Open navigation">$MenuIcon</button><div class="psi-app-heading">$CommandHeading</div></div>
-        <div class="psi-app-command-actions">$($ViewCommandMarkup.ToString())$SearchButton<div class="psi-theme-control" role="group" aria-label="Report color theme"><button type="button" data-psi-theme="Light" aria-pressed="false">$LightIcon<span>Light</span></button><button type="button" data-psi-theme="Dark" aria-pressed="false">$DarkIcon<span>Dark</span></button><button type="button" data-psi-theme="Auto" aria-pressed="false">$AutoIcon<span>Auto</span></button></div>$ExportToolbar</div>
+        <div class="psi-app-command-actions">$($ViewCommandMarkup.ToString())$GlobalSearchButton$SearchButton<div class="psi-theme-control" role="group" aria-label="Report color theme"><button type="button" data-psi-theme="Light" aria-pressed="false">$LightIcon<span>Light</span></button><button type="button" data-psi-theme="Dark" aria-pressed="false">$DarkIcon<span>Dark</span></button><button type="button" data-psi-theme="Auto" aria-pressed="false">$AutoIcon<span>Auto</span></button></div>$ExportToolbar</div>
       </header>
       <main class="psi-app-workspace" id="psi-app-main">
         <div class="psi-app-content">$Sections</div>
@@ -119,6 +162,8 @@ $($NavMarkup.ToString())      </nav>
       <footer class="psi-app-footer">Generated by PSInsightHTML | Theme <span data-psi-theme-footer>$Theme</span></footer>
     </div>
   </div>
+  $PrintProjection
+  $GlobalSearchMarkup
   <template id="psi-fluent-icon-attribution"><pre>$License
 
 $Notice</pre></template>
@@ -129,6 +174,13 @@ $Notice</pre></template>
   $TableScript
   <script>
 $AppScript
+  </script>
+  $RelationshipScriptMarkup
+  <script>
+$GlobalSearchScript
+  </script>
+  <script>
+$PrintScript
   </script>
 </body>
 </html>

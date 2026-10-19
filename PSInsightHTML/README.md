@@ -8,6 +8,7 @@ Version 0.10.0 builds standalone reports from PowerShell objects. The generic en
 
 - Standalone HTML with embedded CSS, JavaScript, icons, and SVG charts; no CDN required.
 - Light, Dark, and Auto themes, responsive layout, sticky report and assessment navigation, and print support.
+- Multi-view Application reports have [global search and a command palette](docs/Application-Search.md) for views, checks, findings, resources, evidence, and exceptions.
 - KPI cards with restrained pointer and keyboard interaction feedback, plus key/value panels, status indicators, alerts, text, insights, and recommendations.
 - Tables with search, sorting, select/multiselect filters, pagination, CSV/XLSX export, and print actions.
 - Conditional cell and row formatting; Bar, Line, Doughnut, and Pie charts.
@@ -304,6 +305,8 @@ Workbook-dependent tests require the excluded local sample workbook.
 - [Getting Started](docs/Getting-Started.md)
 - [Architecture](docs/Architecture.md)
 - [Provider Architecture](docs/ProviderArchitecture.md)
+- [Active Directory Provider](docs/ActiveDirectory-Provider.md)
+- [Application Relationships](docs/Application-Relationships.md)
 - [Known Limitations](docs/Known-Limitations.md)
 - [Roadmap](docs/Roadmap.md)
 - [Changelog](CHANGELOG.md)

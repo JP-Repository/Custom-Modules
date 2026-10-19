@@ -1,0 +1,43 @@
+# Provider-owned private function loader. Importing this script performs no collection.
+$PSIADProviderRoot=Split-Path $PSScriptRoot -Parent
+foreach ($RelativePath in @(
+    'Fixtures/New-PSIADDCReadinessSample.ps1',
+    'Fixtures/Add-PSIADHealthFictionalObservations.ps1',
+    'Fixtures/Add-PSIADSecurityFictionalObservations.ps1',
+    'Fixtures/Add-PSIADSecuritySampleFacts.ps1',
+    'Collectors/Get-PSIADReadOnlyAdapter.ps1',
+    'Collectors/Get-PSIADSecurityRuntimeFacts.ps1',
+    'Collectors/Get-PSIADPrivilegedFacts.ps1',
+    'Collectors/Invoke-PSIADCollector.ps1',
+    'Collectors/Resolve-PSIADCollectionError.ps1',
+    'Collectors/Get-PSIADCollectionCoverage.ps1',
+    'Collectors/New-PSIADLiveSnapshot.ps1',
+    'Rules/Readiness/Get-PSIADRuleCoverage.ps1',
+    'Rules/Readiness/Get-PSIADDCReadinessOutcome.ps1',
+    'Shared/Resolve-PSIADCollectionOptions.ps1',
+    'Shared/ConvertTo-PSIADDependencyInput.ps1',
+    'Shared/ConvertTo-PSIADBackupInput.ps1',
+    'Shared/Collect-PSIADSnapshot.ps1',
+    'Shared/Get-PSIADProviderMetadata.ps1',
+    'Normalization/ConvertTo-PSIADDCReadinessModel.ps1',
+    'Models/Add-PSIADResources.ps1',
+    'Models/New-PSIADDCInventoryModel.ps1',
+    'Models/New-PSIADDCInventoryPresentation.ps1',
+    'Relationships/Add-PSIADRelationships.ps1',
+    'Relationships/New-PSIADPresentationRelationships.ps1',
+    'Evidence/New-PSIADRuleEvidence.ps1',
+    'Evidence/New-PSIADObservationEvidence.ps1',
+    'Evidence/New-PSIADHealthEvidenceModel.ps1',
+    'Evidence/New-PSIADSecurityEvidenceModel.ps1',
+    'Rules/Health/Get-PSIADHealthRuleOutcome.ps1',
+    'Rules/Security/Get-PSIADSecurityRuleOutcome.ps1',
+    'Assessments/Health/Test-PSIADHealth.ps1',
+    'Assessments/Security/Test-PSIADSecurity.ps1',
+    'Compliance/Get-PSIADControlMappings.ps1',
+    'Compliance/Resolve-PSIADComplianceApplicability.ps1',
+    'Compliance/Test-PSIADCompliance.ps1',
+    'Profiles/Resolve-PSIADAssessmentProfile.ps1',
+    'Assessments/DCReadiness/Test-PSIADDCReadiness.ps1'
+)) {
+    . (Join-Path $PSIADProviderRoot $RelativePath)
+}

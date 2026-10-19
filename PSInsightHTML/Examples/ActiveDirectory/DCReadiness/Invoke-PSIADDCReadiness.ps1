@@ -7,6 +7,8 @@ param(
     [switch] $IncludePortChecks,
     [switch] $IncludeSecurityChecks,
     [switch] $IncludeDependencyDiscovery,
+    [ValidateSet('Core','Operational','Security','Dependencies','Full')][string] $CollectionProfile = 'Core',
+    [object[]] $DependencyInput = @(),
     [hashtable] $CommandAdapter,
     [string] $OutputPath,
     [ValidateSet('Light','Dark','Auto')][string] $Theme = 'Auto',
@@ -16,20 +18,11 @@ param(
 $ErrorActionPreference='Stop'
 $ModuleRoot=Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent
 Import-Module (Join-Path $ModuleRoot 'PSInsightHTML.psd1') -Force
-. (Join-Path $PSScriptRoot 'SampleData/New-PSIADDCReadinessSample.ps1')
-. (Join-Path $PSScriptRoot 'Live/Get-PSIADReadOnlyAdapter.ps1')
-. (Join-Path $PSScriptRoot 'Live/Invoke-PSIADCollector.ps1')
-. (Join-Path $PSScriptRoot 'Live/Get-PSIADCollectionCoverage.ps1')
-. (Join-Path $PSScriptRoot 'Live/New-PSIADLiveSnapshot.ps1')
-. (Join-Path $PSScriptRoot 'Live/Get-PSIADRuleCoverage.ps1')
-. (Join-Path $PSScriptRoot 'Collect-PSIADDCReadiness.ps1')
-. (Join-Path $PSScriptRoot 'ConvertTo-PSIADDCReadinessModel.ps1')
-. (Join-Path $PSScriptRoot 'Get-PSIADDCReadinessOutcome.ps1')
-. (Join-Path $PSScriptRoot 'Test-PSIADDCReadiness.ps1')
+. (Join-Path $ModuleRoot 'Providers/ActiveDirectory/Shared/Import-PSIADProvider.ps1')
 if (-not $OutputPath) { if ($UseSampleData) { $OutputPath=Join-Path $ModuleRoot 'Reports/DCReadiness' } elseif ($env:OS -eq 'Windows_NT') { $OutputPath='C:\Temp\Reports\DCReadiness' } else { $OutputPath=Join-Path $ModuleRoot 'Reports/DCReadiness' } }
 if (-not $UseSampleData) { $OutputPath=Join-Path $OutputPath (Get-Date -Format 'yyyyMMdd-HHmmss') }
 
-$Snapshot=Collect-PSIADDCReadiness -UseSampleData:$UseSampleData -Domain $Domain -IncludeRemoteChecks:$IncludeRemoteChecks -IncludePortChecks:$IncludePortChecks -IncludeSecurityChecks:$IncludeSecurityChecks -IncludeDependencyDiscovery:$IncludeDependencyDiscovery -CommandAdapter $CommandAdapter
+$Snapshot=Collect-PSIADSnapshot -UseSampleData:$UseSampleData -Domain $Domain -Profile $CollectionProfile -IncludeRemoteChecks:$IncludeRemoteChecks -IncludePortChecks:$IncludePortChecks -IncludeSecurityChecks:$IncludeSecurityChecks -IncludeDependencyDiscovery:$IncludeDependencyDiscovery -DependencyInput $DependencyInput -CommandAdapter $CommandAdapter
 $Inventory=ConvertTo-PSIADDCReadinessModel -InputObject $Snapshot
 $Results=@{}
 foreach ($Target in @('2022','2025')) { $Results[$Target]=Test-PSIADDCReadiness -Inventory $Inventory -TargetOS $Target }
@@ -42,6 +35,10 @@ $Comparison=@(
 )
 $Assessment=$Selected.Assessment; $Model=$Selected.Model
 $IsSample=$Inventory.Source -eq 'Fictional sample'
+$Presentation=New-PSIADPresentationRelationships -Inventory $Inventory -Model $Model
+$InfrastructureNodes=$Presentation.InfrastructureNodes
+$ReplicationNodes=$Presentation.ReplicationNodes
+$ReplicationEdges=$Presentation.ReplicationEdges
 $Report=New-PSIReport -Title $(if ($IsSample) { "DC Readiness $TargetOS | Fictional Sample" } else { "DC Readiness $TargetOS | $($Inventory.Domains[0].Name)" }) -Subtitle 'Active Directory domain controller modernization assessment' -Theme $Theme -Layout Application
 $null=$Report | Set-PSIApplicationModel -Model $Model | Set-PSIApplicationAssessment -Assessment $Assessment
 
@@ -70,14 +67,17 @@ $null=$Report |
 $CoverageNames=@{ DCs='Domain controllers'; Domain='Domain metadata'; Forest='Forest metadata'; Sites='AD sites'; Subnets='AD subnets'; SiteLinks='AD site links'; Partners='Replication partners'; Failures='Replication failures'; Remote='Remote OS, disk, services and DNS client'; Shares='SYSVOL and NETLOGON shares'; Time='Time source'; DNS='DNS Server'; Port='Collector-to-DC TCP ports'; Security='Security registry observations'; Dependencies='Dependency discovery'; DFSRMigration='DFSR migration state'; PendingReboot='Pending reboot state'; ResolverReachability='DNS resolver reachability'; ZoneHealth='DNS zone health'; ForwarderReachability='DNS forwarder reachability'; PDCSourceReachability='PDC time source reachability'; ProviderDependencyInput='Application dependency owner input' }
 $CoverageRows=@(foreach ($Item in $Inventory.CollectionCoverage.Collectors) { [pscustomobject]@{ Collector=if ($CoverageNames.ContainsKey($Item.Collector)) { $CoverageNames[$Item.Collector] } else { $Item.Collector }; Status=switch ($Item.Status) { Collected { 'Healthy' } Partial { 'Warning' } Failed { 'Critical' } NotSupported { 'Unknown' } default { 'NotChecked' } }; CollectionState=$Item.Status; Expected=$Item.Expected; Collected=$Item.Collected; CoveragePercent=$Item.CoveragePercent; Failures=$Item.Failures; NotTested=$Item.NotTested } })
 $FailureRows=@(foreach ($Item in @($Inventory.CollectionResults | Where-Object { $_.Status -in @('Failed','Partial','NotSupported') })) { [pscustomobject]@{ Collector=if ($CoverageNames.ContainsKey($Item.CollectorId)) { $CoverageNames[$Item.CollectorId] } else { $Item.CollectorId }; Scope=$Item.Scope; Status=switch ($Item.Status) { Failed { 'Critical' } Partial { 'Warning' } default { 'Unknown' } }; CollectionState=$Item.Status; ErrorCode=$Item.ErrorCode; Notes=$Item.Notes } })
+$CoverageGaps=@(foreach ($Item in @($Inventory.CollectionResults | Where-Object { $_.Requested -and $_.Status -ne 'Collected' })) { [pscustomobject]@{ Collector=if ($CoverageNames.ContainsKey($Item.CollectorId)) { $CoverageNames[$Item.CollectorId] } else { $Item.CollectorId }; Scope=$Item.Scope; Status=switch ($Item.Status) { Failed { 'Critical' } Partial { 'Warning' } NotSupported { 'Unknown' } default { 'NotChecked' } }; CollectionState=$Item.Status; Explanation=if ($Item.Notes) { $Item.Notes } elseif ($Item.ErrorMessage) { $Item.ErrorMessage } else { "Evidence remains $($Item.Status) for this scope." } } })
 $null=$Report |
     Add-PSIView -Id coverage -Title 'Collection Coverage' -Subtitle 'Read-only evidence completeness and failures' -Icon Document -Group Investigation |
     Add-PSISection -Title 'Evidence coverage' |
     Add-PSIRow -Columns 12 |
     Add-PSIKPI -Title 'Overall evidence coverage' -Value "$($Inventory.CollectionCoverage.OverallPercent)%" -Subtitle "$($Inventory.CollectionCoverage.Collected) of $($Inventory.CollectionCoverage.Expected) requested observations" -Status $(if ($Inventory.CollectionCoverage.OverallPercent -ge 99) { 'Healthy' } else { 'Warning' }) -VisualTone Informational -Icon Document -Span 4 |
-    Add-PSIText -Text 'Evidence coverage measures completed requested collection. It does not change the readiness score or override the assessment decision. Not Requested and Not Supported are shown explicitly.' -Size Small |
+    Add-PSIText -Text 'Evidence coverage = completed requested observations / expected requested observations. Partial collection receives credit only for completed subqueries. Not Requested is excluded. Not Supported and Failed both mean missing evidence, but retain distinct causes. Coverage does not change readiness score or decision.' -Size Small |
     Add-PSIRow -Columns 12 |
     Add-PSITable -Id 'dc-coverage' -Title 'Collector coverage' -Data $CoverageRows -Columns @('Collector','Status','CollectionState','Expected','Collected','CoveragePercent','Failures','NotTested') -ColumnLabels @{ CollectionState='Collection state'; Expected='Expected'; Collected='Collected'; CoveragePercent='Coverage %'; NotTested='Not tested' } -PageSize 12 |
+    Add-PSIRow -Columns 12 |
+    Add-PSITable -Id 'dc-coverage-gaps' -Title 'Why evidence coverage is below 100%' -Data $CoverageGaps -Columns @('Collector','Scope','Status','CollectionState','Explanation') -ColumnLabels @{ CollectionState='Collection state' } -PageSize 12 |
     Add-PSIRow -Columns 12 |
     Add-PSITable -Id 'dc-collection-failures' -Title 'Partial and failed observations' -Data $FailureRows -Columns @('Collector','Scope','Status','CollectionState','ErrorCode','Notes') -ColumnLabels @{ CollectionState='Collection state'; ErrorCode='Error type' } -PageSize 12
 
@@ -113,7 +113,7 @@ $null=$Report |
     Add-PSIRow -Columns 12 |
     Add-PSIStatus -Status $(if ($IsSample) { 'Warning' } else { 'NotChecked' }) -Label $(if ($IsSample) { 'Historical RPC error recovered' } else { 'Replication collection' }) -Message $(if ($IsSample) { 'The sample 1722 event has zero current and consecutive failures, with a recent successful replication. It is a review signal, not an automatic blocker.' } else { 'Partner and failure queries are shown separately in Collection Coverage. A failed query is never interpreted as no failures.' }) |
     Add-PSIRow -Columns 12 |
-    Add-PSITable -Id 'dc-replication' -Title 'Observed replication links' -Data $Inventory.Replication -Columns @('Source','Destination','NamingContext','CurrentFailures','ConsecutiveFailures','LastSuccess','LastError','LatencyMinutes') -PageSize 6 |
+    Add-PSITable -Id 'dc-replication' -Title 'Observed replication links' -Data $Inventory.Replication -Columns @('Source','Destination','NamingContext','NamingContextKind','ExternalToAssessmentScope','CurrentFailures','ConsecutiveFailures','LastSuccess','LastError','LatencyMinutes') -ColumnLabels @{ NamingContextKind='Context type'; ExternalToAssessmentScope='Evidence-only partner' } -PageSize 6 |
     Add-PSIRow -Columns 12 |
     Add-PSIText -Text "SYSVOL engine: $SysvolState; DFSR migration: $DfsrState. Current material failures or unsupported SYSVOL replication block readiness when verified." -Size Small
 
@@ -127,6 +127,7 @@ $null=$Report |
     Add-PSIText -Text $(if ($IsSample) { 'Self-DNS is reviewed with resolver reachability and site design; it is not automatically invalid. One sample upstream forwarder is unreachable.' } else { 'Self-DNS alone is not unhealthy. Resolver and forwarder reachability are untested unless supported evidence is explicitly collected.' }) -Size Small
 
 $SecurityRows=@($Selected.GPO | Select-Object Setting,Current,Recommended,Status,Framework)
+$PortRows=@(foreach ($Item in @($Inventory.Ports)) { [pscustomobject]@{ Port=$Item.Port; Protocol=if ($Item.Protocol) { $Item.Protocol } elseif ($Item.Port -eq 'Dynamic RPC') { 'TCP range' } else { 'TCP' }; Role=$Item.Role; Source=$Item.Source; Destination=$Item.Destination; TestMethod=if ($Item.TestMethod) { $Item.TestMethod } elseif ($Item.Result -eq 'NotTested') { 'Not tested' } else { 'Fictional sample TCP probe' }; Result=$Item.Result } })
 $null=$Report |
     Add-PSIView -Id security -Title 'Security' -Subtitle 'Versioned provider security observations' -Icon SecurityShield |
     Add-PSISection -Title 'Security review' |
@@ -149,7 +150,9 @@ $null=$Report |
     Add-PSIRow -Columns 12 |
     Add-PSITable -Id 'dc-dependencies' -Title 'Known and untested dependencies' -Data $Inventory.Dependencies -Columns @('Name','Type','Version','CU','Confidence','Status','Detail') -PageSize 9 |
     Add-PSIRow -Columns 12 |
-    Add-PSITable -Id 'dc-ports' -Title 'Topology-aware port observations' -Data $Inventory.Ports -Columns @('Port','Role','Source','Destination','Result') -PageSize 12
+    Add-PSITable -Id 'dc-ports' -Title 'Topology-aware port observations' -Data $PortRows -Columns @('Port','Protocol','Role','Source','Destination','TestMethod','Result') -ColumnLabels @{ TestMethod='Test method' } -PageSize 12 |
+    Add-PSIRow -Columns 12 |
+    Add-PSIText -Text 'TCP 135 is the RPC endpoint mapper only; dynamic RPC is a negotiated port range and is not verified by a 135-only probe. Port results describe the collector-to-DC path, not every application or site path.' -Size Small
 
 $null=$Report |
     Add-PSIView -Id checks -Title 'Checks' -Subtitle 'Category, status, blocker and evidence investigation' -Icon Rules -Badge $Assessment.Checks.Count |
@@ -174,6 +177,21 @@ $null=$Report |
     Add-PSISection -Title 'Evidence register' |
     Add-PSIRow -Columns 12 |
     Add-PSIExplorer -Id 'dc-evidence' -Title 'Provider observations' -Data $Model.Evidence -TitleProperty Title -SubtitleProperty Source -EntityType Evidence
+$null=$Report |
+    Add-PSIView -Id infrastructure -Title 'Infrastructure' -Subtitle 'Forest, domain, site and resource hierarchy' -Icon Relationship -Group Investigation |
+    Add-PSISection -Title 'Infrastructure hierarchy' |
+    Add-PSIRow -Columns 12 |
+    Add-PSITree -Id 'dc-infrastructure-tree' -Title 'Infrastructure hierarchy' -Nodes $InfrastructureNodes -Relationships $Model.Relationships -DetailProperties @('Site','OS','GlobalCatalog','FSMORoles')
+$null=$Report |
+    Add-PSIView -Id topology -Title 'Topology' -Subtitle 'Replication observations and external evidence endpoints' -Icon Relationship -Group Investigation |
+    Add-PSISection -Title 'Replication topology' |
+    Add-PSIRow -Columns 12 |
+    Add-PSITopology -Id 'dc-replication-topology' -Title 'Replication topology' -Nodes $ReplicationNodes -Relationships $ReplicationEdges -DetailProperties @('Site','OS')
+$null=$Report |
+    Add-PSIView -Id relationships -Title 'Relationships' -Subtitle 'Incoming and outgoing replication observations' -Icon Relationship -Group Investigation |
+    Add-PSISection -Title 'Replication relationship explorer' |
+    Add-PSIRow -Columns 12 |
+    Add-PSIRelationshipExplorer -Id 'dc-replication-relationships' -Title 'Replication relationships' -Nodes $ReplicationNodes -Relationships $ReplicationEdges
 $null=$Report |
     Add-PSIView -Id exceptions -Title 'Exceptions' -Subtitle 'Approved exception with ownership and expiry' -Icon SeverityInfo -Group Investigation |
     Add-PSISection -Title 'Exception register' |

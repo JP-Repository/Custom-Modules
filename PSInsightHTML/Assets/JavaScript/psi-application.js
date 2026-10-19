@@ -107,7 +107,19 @@
         window.requestAnimationFrame(function () { target.scrollIntoView({ block: 'start', behavior: 'auto' }); });
       }
     });
-    window.PSIApplication = { activateView: activateView };
+    window.PSIApplication = {
+      activateView: activateView,
+      selectEntity: function (viewId, entityType, entityId) {
+        if (!activateView(viewId, false)) { return false; }
+        var view = views.filter(function (candidate) { return candidate.getAttribute('data-psi-app-view') === viewId; })[0];
+        var explorer = view && Array.prototype.filter.call(view.querySelectorAll('[data-psi-app-explorer]'), function (candidate) {
+          return candidate.getAttribute('data-psi-entity-type') === entityType;
+        })[0];
+        if (!explorer || !explorer.psiSelectEntity || !explorer.psiSelectEntity(entityId)) { return false; }
+        explorer.scrollIntoView({ block: 'start', behavior: 'auto' });
+        return true;
+      }
+    };
   }
   Array.prototype.forEach.call(shell.querySelectorAll('[data-psi-app-explorer]'), function (explorer) {
     var items = Array.prototype.slice.call(explorer.querySelectorAll('[data-psi-explorer-item]'));

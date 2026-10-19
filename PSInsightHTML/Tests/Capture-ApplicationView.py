@@ -74,6 +74,14 @@ def main():
     parser.add_argument('--cross-view', default='', choices=['', 'checks', 'findings', 'resources', 'evidence', 'exceptions'])
     parser.add_argument('--category', default='')
     parser.add_argument('--status', default='')
+    parser.add_argument('--palette-query', default=None)
+    parser.add_argument('--palette-mode', choices=['Search', 'Commands'], default='Search')
+    parser.add_argument('--palette-shortcut', choices=['click', 'ctrl', 'meta'], default='click')
+    parser.add_argument('--palette-keys', default='')
+    parser.add_argument('--relationship-exercise', choices=['Tree', 'Topology', 'Explorer'], default='')
+    parser.add_argument('--relationship-node-id', default='')
+    parser.add_argument('--relationship-edge-id', default='')
+    parser.add_argument('--relationship-detail-filter', default='', help='Filter label=value, such as Site=West')
     args = parser.parse_args()
     chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
     report_dir = Path(__file__).resolve().parents[1] / 'Reports'
@@ -154,13 +162,76 @@ def main():
                 evaluate("document.querySelector('[data-psi-category-id=' + %s + ']').click()" % json.dumps('"' + args.category + '"'))
             if args.status:
                 evaluate("(()=>{let f=document.querySelector('[data-psi-app-view]:not([hidden]) [data-psi-entity-type=\"Check\"] [data-psi-explorer-filter=\"Status\"]');f.value=%s;f.dispatchEvent(new Event('change',{bubbles:true}))})()" % json.dumps(args.status))
+            relationship_metrics = None
+            if args.relationship_exercise:
+                relationship_metrics = evaluate("JSON.stringify((()=>{"
+                    "let view=document.querySelector('[data-psi-app-view]:not([hidden])'),root=view.querySelector('[data-psi-rel-component]'),"
+                    "mode=%s,output={mode:mode},data=JSON.parse(root.querySelector('[data-psi-rel-data]').textContent),"
+                    "search=root.querySelector('[data-psi-rel-search]'),detail=root.querySelector('[data-psi-rel-detail]');"
+                    "output.nodes=data.Nodes.length;output.edges=data.Edges.length;"
+                    "output.domReadyMs=Math.round(performance.getEntriesByType('navigation')[0].domContentLoadedEventEnd);"
+                    "if(mode==='Tree'){let first=root.querySelector('[data-psi-rel-node][aria-expanded]');"
+                    "first.focus();first.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));output.collapsed=first.getAttribute('aria-expanded')==='false';"
+                    "first.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));output.expanded=first.getAttribute('aria-expanded')==='true';"
+                    "first.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));output.keyboardSelection=root.querySelector('[data-psi-rel-node][aria-selected=true]')?.getAttribute('data-psi-rel-node');"
+                    "search.value='does-not-exist';search.dispatchEvent(new Event('input',{bubbles:true}));output.emptyVisible=!root.querySelector('[data-psi-rel-filter-empty]').hidden;"
+                    "search.value='';search.dispatchEvent(new Event('input',{bubbles:true}));}"
+                    "if(mode==='Topology'){let node=root.querySelectorAll('.psi-rel-graph-node')[1],edge=root.querySelector('.psi-rel-edge-group');"
+                    "let selectionStart=performance.now();node.dispatchEvent(new MouseEvent('click',{bubbles:true}));"
+                    "output.selectionMs=Math.round((performance.now()-selectionStart)*100)/100;"
+                    "output.nodeSelected=node.getAttribute('aria-pressed')==='true';"
+                    "edge.dispatchEvent(new MouseEvent('click',{bubbles:true}));output.edgeSelected=edge.getAttribute('aria-pressed')==='true';"
+                    "let f=root.querySelector('[data-psi-rel-filter=status]');f.value='Warning';"
+                    "let filterStart=performance.now();f.dispatchEvent(new Event('change',{bubbles:true}));"
+                    "output.filterMs=Math.round((performance.now()-filterStart)*100)/100;"
+                    "output.filteredCount=root.querySelector('[data-psi-rel-count]').textContent;"
+                    "f.value='';f.dispatchEvent(new Event('change',{bubbles:true}));"
+                    "let zoom=root.querySelector('[data-psi-rel-zoom=in]');zoom.click();output.zoomed=root.querySelector('[data-psi-rel-svg]').style.width!=='';}"
+                    "if(mode==='Explorer'){let edge=root.querySelectorAll('.psi-rel-edge-item')[1];edge.click();"
+                    "output.edgeSelected=edge.getAttribute('aria-pressed')==='true';output.hasEndpoints=detail.textContent.includes('Endpoints');}"
+                    "output.detail=detail.textContent.slice(0,100);output.overflow=document.documentElement.scrollWidth>innerWidth;"
+                    "output.themeBefore=document.documentElement.getAttribute('data-theme');"
+                    "let other=output.themeBefore==='Dark'?'Light':'Dark';document.querySelector('[data-psi-theme=\"'+other+'\"]').click();"
+                    "output.themeSwitched=document.documentElement.getAttribute('data-theme')===other;"
+                    "document.querySelector('[data-psi-theme=\"'+output.themeBefore+'\"]').click();"
+                    "if(mode==='Tree'){let action=detail.querySelector('.psi-rel-detail-link');"
+                    "let target=[...detail.querySelectorAll('.psi-rel-detail-link')].find(x=>x.textContent.includes('Open resource'));"
+                    "if(target){target.click();output.crossView=document.querySelector('[data-psi-app-view]:not([hidden])')?.getAttribute('data-psi-app-view');"
+                    "document.querySelector('#psi-app-item-'+%s).click();}}"
+                    "return output})())" % (json.dumps(args.relationship_exercise), json.dumps(args.view)))
+            if args.relationship_node_id:
+                evaluate("document.querySelector('.psi-rel-graph-node[data-psi-rel-id=' + %s + ']').dispatchEvent(new MouseEvent('click',{bubbles:true}))" % json.dumps('"' + args.relationship_node_id + '"'))
+            if args.relationship_edge_id:
+                evaluate("document.querySelector('.psi-rel-edge-group[data-psi-rel-id=' + %s + ']').dispatchEvent(new MouseEvent('click',{bubbles:true}))" % json.dumps('"' + args.relationship_edge_id + '"'))
+            detail_filter_metrics = None
+            if args.relationship_detail_filter:
+                label, value = args.relationship_detail_filter.split('=', 1)
+                detail_filter_metrics = evaluate("JSON.stringify((()=>{let root=document.querySelector('[data-psi-app-view]:not([hidden]) [data-psi-rel-component]'),f=[...root.querySelectorAll('[data-psi-rel-filter-detail]')].find(x=>x.getAttribute('data-psi-rel-filter-detail')===%s);if(!f)return {error:'filter missing'};f.value=%s;f.dispatchEvent(new Event('change',{bubbles:true}));return {label:%s,value:f.value,count:root.querySelector('[data-psi-rel-count]').textContent,visible:[...root.querySelectorAll('.psi-rel-graph-node')].map(x=>x.getAttribute('aria-label'))}})())" % (json.dumps(label), json.dumps(value), json.dumps(label)))
+            palette_timing = None
+            if args.palette_query is not None:
+                if args.palette_shortcut == 'click':
+                    evaluate("document.querySelector('[data-psi-global-search-trigger]').click()")
+                else:
+                    modifier = 'ctrlKey' if args.palette_shortcut == 'ctrl' else 'metaKey'
+                    evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'k',%s:true,bubbles:true}))" % modifier)
+                if args.palette_mode == 'Commands':
+                    evaluate("document.querySelector('[data-psi-global-mode=\"Commands\"]').click()")
+                palette_timing = evaluate("(()=>{let i=document.querySelector('[data-psi-global-search-input]'),t=performance.now();i.value=%s;i.dispatchEvent(new Event('input',{bubbles:true}));return performance.now()-t})()" % json.dumps(args.palette_query))
+                for key in filter(None, args.palette_keys.split(',')):
+                    evaluate("document.querySelector('[data-psi-global-search-input]').dispatchEvent(new KeyboardEvent('keydown',{key:%s,bubbles:true}))" % json.dumps(key))
             time.sleep(.25)
             metrics = evaluate("JSON.stringify((()=>{let v=[...document.querySelectorAll('[data-psi-app-view]')],n=[...document.querySelectorAll('[data-psi-app-item]')],a=n.filter(x=>x.hasAttribute('aria-current'))[0],s=a&&a.querySelector('.psi-icon-filled'),r=a&&a.querySelector('.psi-icon-regular'),x=document.querySelector('[data-psi-app-view]:not([hidden]) [data-psi-app-explorer]');return {view:v.filter(x=>!x.hidden).map(x=>x.getAttribute('data-psi-app-view')),viewCount:v.length,heading:document.querySelector('[data-psi-app-view-title]').textContent,selected:a&&a.id,filled:s&&getComputedStyle(s).display!=='none'&&s.getBBox().width>0,regularHidden:r&&getComputedStyle(r).display==='none',navigationIcons:n.filter(x=>{let i=x.querySelector('.psi-icon-regular');return i&&i.querySelector('path')}).length,navOpen:document.querySelector('.psi-app-shell').classList.contains('psi-app-nav-open'),focus:document.activeElement.getAttribute('aria-label')||document.activeElement.id,scrollWidth:document.documentElement.scrollWidth,innerWidth:innerWidth,theme:document.documentElement.getAttribute('data-theme'),selectedRecord:document.querySelector('[data-psi-app-view]:not([hidden]) [data-psi-explorer-item][aria-selected=true]')?.textContent.trim()||null,visibleItems:x?[...x.querySelectorAll('[data-psi-explorer-item]')].filter(i=>!i.hidden).length:null}})())")
             assessment_metrics = evaluate("JSON.stringify((()=>{let c=document.querySelector('[data-psi-app-view]:not([hidden]) [data-psi-entity-type=\"Check\"]');return {decision:document.querySelector('.psi-assessment-decision')?.textContent.trim()||null,score:document.querySelector('.psi-assessment-gauge strong')?.textContent.trim()||null,checkVisible:c?[...c.querySelectorAll('[data-psi-explorer-item]')].filter(i=>!i.hidden).length:null,checkCategory:c?.querySelector('[data-psi-explorer-filter=\"CategoryId\"]')?.value||null}})())")
+            palette_metrics = evaluate("JSON.stringify((()=>{let p=document.querySelector('[data-psi-global-search-backdrop]'),r=document.querySelector('[data-psi-global-search-results]'),i=document.querySelector('[data-psi-global-search-input]'),e=document.querySelector('[data-psi-export-scope=report] [data-psi-export-menu]'),v=document.querySelector('[data-psi-app-view]:not([hidden])'),s=v?.querySelector('[data-psi-explorer-search], [data-psi-search]');return p?{open:!p.hidden,indexCount:window.PSIGlobalSearch?.count,indexBytes:window.PSIGlobalSearch?.indexBytes,queryMs:%s,options:[...r.querySelectorAll('[role=option]')].map(x=>x.textContent.trim()),selected:i.getAttribute('aria-activedescendant'),focus:document.activeElement.id||document.activeElement.getAttribute('aria-label'),record:v?.querySelector('[data-psi-explorer-item][aria-selected=true]')?.getAttribute('data-psi-entity-id')||null,localSearch:s?.value||'',visibleRecords:v?[...v.querySelectorAll('[data-psi-explorer-item]')].filter(x=>!x.hidden).length:null,exportOpen:e?!e.hidden:false,theme:document.documentElement.getAttribute('data-theme')}:null})())" % ('null' if palette_timing is None else str(palette_timing)))
             screenshot = call('Page.captureScreenshot', {'format': 'png', 'captureBeyondViewport': False})['data']
             args.output.write_bytes(base64.b64decode(screenshot))
             print(metrics)
             print(assessment_metrics)
+            print(palette_metrics)
+            if relationship_metrics is not None:
+                print(relationship_metrics)
+            if detail_filter_metrics is not None:
+                print(detail_filter_metrics)
             print(args.output)
         finally:
             process.terminate()

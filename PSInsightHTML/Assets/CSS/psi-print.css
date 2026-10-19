@@ -1,0 +1,78 @@
+/* The Application print projection is a document, independent of active views. */
+.psi-print-document { display: none !important; }
+@media print {
+  @page { size: auto; margin: 15mm 14mm 20mm;
+    @bottom-left { content: "PSInsightHTML report document"; font: 7pt Arial, sans-serif; color: #475569; }
+    @bottom-right { content: "Page " counter(page); font: 7pt Arial, sans-serif; color: #475569; }
+  }
+  html[data-psi-layout="Application"], html[data-psi-layout="Application"][data-theme] {
+    color-scheme: light !important;
+    --psi-background: #fff; --psi-surface: #fff; --psi-text: #17243a;
+    --psi-muted: #475569; --psi-border: #94a3b8;
+  }
+  html[data-psi-layout="Application"] body { background: #fff !important; color: #17243a !important; font: 10pt/1.42 Arial, sans-serif !important; }
+  html[data-psi-layout="Application"] .psi-app-shell,
+  html[data-psi-layout="Application"] .psi-global-search-backdrop,
+  html[data-psi-layout="Application"] .psi-dialog-backdrop,
+  html[data-psi-layout="Application"] .psi-export-toolbar { display: none !important; }
+  html[data-psi-layout="Application"] .psi-print-document,
+  html[data-psi-layout="Application"] .psi-print-document[hidden] {
+    display: block !important; width: 100%; max-width: none; margin: 0; padding: 0;
+    background: #fff !important; color: #17243a !important;
+  }
+  .psi-print-document * { box-sizing: border-box; }
+  .psi-print-document { overflow: visible; }
+  .psi-print-document p, .psi-print-document li, .psi-print-document dd,
+  .psi-print-document th, .psi-print-document td, .psi-print-document h3 {
+    word-wrap: break-word; overflow-wrap: anywhere;
+  }
+  .psi-print-document h1, .psi-print-document h2, .psi-print-document h3,
+  .psi-print-document p, .psi-print-document dt, .psi-print-document dd,
+  .psi-print-document th, .psi-print-document td { color: #17243a !important; }
+  .psi-print-document h1 { font-size: 25pt; line-height: 1.14; letter-spacing: -.025em; margin: 0 0 5mm; }
+  .psi-print-document h2 { font-size: 15pt; line-height: 1.25; margin: 0; }
+  .psi-print-document h3 { font-size: 10.5pt; line-height: 1.28; margin: 5mm 0 2mm; }
+  .psi-print-document p { margin: 2mm 0 3mm; }
+  .psi-print-running { display: none !important; }
+  .psi-print-running span { text-align: right; }
+  .psi-print-cover { min-height: 225mm; display: flex; flex-direction: column; justify-content: center; break-after: page; page-break-after: always; }
+  .psi-print-kicker { font-weight: 700; font-size: 8pt; letter-spacing: .12em; text-transform: uppercase; }
+  .psi-print-subtitle { font-size: 12pt; max-width: 130mm; }
+  .psi-print-assessment { font-weight: 700; margin-top: 8mm !important; }
+  .psi-print-cover-grid, .psi-print-metrics, .psi-print-facts { margin: 6mm 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2mm 7mm; }
+  .psi-print-cover-grid { border-top: 2px solid #17243a; padding-top: 5mm; }
+  .psi-print-cover-grid div, .psi-print-metrics div, .psi-print-facts div { min-width: 0; break-inside: avoid; }
+  .psi-print-cover-grid dt, .psi-print-metrics dt, .psi-print-facts dt { font-size: 7pt; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; }
+  .psi-print-cover-grid dd, .psi-print-metrics dd, .psi-print-facts dd { margin: .5mm 0 2mm; overflow-wrap: anywhere; }
+  .psi-print-cover-foot { margin-top: 12mm !important; font-size: 8pt; }
+  .psi-print-contents { break-after: page; page-break-after: always; }
+  .psi-print-contents h2 { padding-bottom: 4mm; border-bottom: 1px solid #94a3b8; }
+  .psi-print-contents ol { list-style: none; margin: 5mm 0; padding: 0; columns: 2; column-gap: 12mm; }
+  .psi-print-contents li { padding: 1.5mm 0; break-inside: avoid; }
+  .psi-print-contents a { color: #17243a; text-decoration: none; }
+  .psi-print-contents a span { display: inline-block; width: 9mm; font-weight: 700; }
+  .psi-print-section { margin: 0 0 8mm; break-inside: auto; }
+  .psi-print-section-heading { display: flex; align-items: baseline; gap: 3mm; border-bottom: 1.5px solid #17243a; padding-bottom: 2mm; margin: 0 0 4mm; break-after: avoid; page-break-after: avoid; }
+  .psi-print-section-heading span { font-size: 8pt; font-weight: 700; }
+  .psi-print-lead { font-size: 11pt; max-width: 160mm; }
+  .psi-print-document ul { padding-left: 6mm; margin: 2mm 0 4mm; }
+  .psi-print-document li { margin-bottom: 1.5mm; }
+  .psi-print-priority { padding-left: 6mm; }
+  .psi-print-priority li { padding: 2mm 0; border-bottom: 1px solid #cbd5e1; break-inside: avoid; }
+  .psi-print-priority span { margin-left: 2mm; }
+  .psi-print-document table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: 3mm 0 6mm; font-size: 8pt; }
+  .psi-print-document thead { display: table-header-group; }
+  .psi-print-document th, .psi-print-document td { border-bottom: 1px solid #cbd5e1; text-align: left; vertical-align: top; padding: 1.8mm 1.5mm; word-break: normal; }
+  .psi-print-document th { border-bottom: 1.5px solid #17243a; font-size: 7pt; text-transform: uppercase; }
+  .psi-print-document tr { break-inside: avoid; page-break-inside: avoid; }
+  .psi-print-status { display: inline-block; font-size: 7.5pt; font-weight: 700; border-left: 2px solid currentColor; padding-left: 1.5mm; white-space: normal; }
+  .psi-print-finding, .psi-print-evidence { padding: 2mm 0 4mm; border-bottom: 1px solid #cbd5e1; break-inside: auto; }
+  .psi-print-finding h3, .psi-print-evidence h3 { break-after: avoid; page-break-after: avoid; }
+  .psi-print-evidence { padding: 1mm 0 2mm; }
+  .psi-print-evidence h3 { margin: 2mm 0 1mm; }
+  .psi-print-evidence .psi-print-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 3mm; margin: 1.5mm 0; font-size: 8pt; }
+  .psi-print-evidence .psi-print-facts dt { font-size: 6.5pt; }
+  .psi-print-evidence .psi-print-facts dd { margin: 0 0 1mm; }
+  .psi-print-record-meta { font-size: 8pt; }
+  .psi-print-end { border-top: 1px solid #94a3b8; padding-top: 2mm; margin-top: 8mm; font-size: 7.5pt; }
+}

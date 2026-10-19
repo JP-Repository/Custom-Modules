@@ -71,6 +71,7 @@ for ($I = 0; $I -lt $FindingExamples.Count; $I++) {
         Id=$EvidenceId; Title="Observation $($I + 1): $($Example.Title)"; Type='Sample observation'; Source='Fictional monitor'
         CollectedAt=[datetime] '2026-10-16T16:00:00'; Summary=$Example.Impact
         Data=@{ Category=$Example.Category; Observed=$Example.Impact; Note='Sample data; no live source queried.' }
+        Metadata=@{ CollectionStateApplicability='NotApplicable' }
         FindingIds=@($FindingId); ResourceIds=$ResourceIds
     }
     foreach ($Resource in $Resources) {
@@ -95,6 +96,16 @@ foreach ($Relationship in $Relationships) {
 }
 $Findings[0].Relationships = @('relationship-02')
 $Model = New-PSIApplicationModel -Findings $Findings -Resources $Resources -Evidence $EvidenceRecords -Relationships $Relationships
+$HierarchyParents = @{ 'resource-02'='resource-01'; 'resource-03'='resource-01'; 'resource-04'='resource-03'; 'resource-05'='resource-03'; 'resource-06'='resource-08'; 'resource-07'='resource-12'; 'resource-08'='resource-12'; 'resource-09'='resource-05'; 'resource-10'='resource-03'; 'resource-11'='resource-06' }
+$HierarchyNodes = @(
+    foreach ($Resource in $Model.Resources) {
+        @{ NodeId=$Resource.Id; ResourceId=$Resource.Id; ParentId=[string] $HierarchyParents[$Resource.Id]; Icon='ResourceServer' }
+    }
+    @{ NodeId='external-assurance'; Label='External assurance'; NodeType='External service'; Status='NotChecked'; Icon='Relationship'; ParentId='resource-06'; IsExternal=$true; EvidenceOnly=$true; Description='Fictional observation source outside the assessed resource scope.' }
+)
+$PresentationRelationships = @($Model.Relationships) + @(
+    [pscustomobject]@{ Id='relationship-external-assurance'; SourceId='external-assurance'; TargetId='resource-06'; Type='observes'; Label='Provides observation'; Direction='Directed'; Status='NotChecked'; Category='Monitoring'; Description='Evidence-only external monitoring connection.'; IsExternal=$true; EvidenceOnly=$true; EvidenceIds=@('evidence-06') }
+)
 $null = $Report | Set-PSIApplicationModel -Model $Model
 
 # Provider-neutral fictional assessment. These outcomes and actions are sample inputs.
@@ -163,6 +174,21 @@ $Assessment = New-PSIApplicationAssessment -Definition @{
     GeneratedAt=$SampleAssessmentDate; Categories=$Categories; Checks=$Checks
     FindingIds=@($Model.Findings | ForEach-Object { $_.Id }); ResourceIds=@($Model.Resources | ForEach-Object { $_.Id })
     EvidenceIds=@($Model.Evidence | ForEach-Object { $_.Id })
+    Metadata=@{ PrintDisplay=@{
+        ReportIdentity=@{ Kicker='PSInsightHTML / Fictional operations assessment' }
+        Resources=@{ Columns=@(
+            @{ Property='Name'; Label='Service' }, @{ Property='Type'; Label='Platform' },
+            @{ Property='Region'; Label='Region' }, @{ Property='Owner'; Label='Owner' },
+            @{ Property='Status'; Label='Status'; Format='Status' }
+        ) }
+        Evidence=@{ Fields=@(
+            @{ Property='Id'; Label='Reference' }, @{ Property='Source'; Label='Observation source' },
+            @{ Property='CollectionState'; Label='Collection state' },
+            @{ Property='Scope'; Label='Linked services'; Format='List' },
+            @{ Property='CollectedAt'; Label='Recorded'; Format='DateTime' },
+            @{ Property='Summary'; Label='Summary' }, @{ Property='FindingIds'; Label='Linked findings'; Format='List' }
+        ) }
+    } }
     Recommendations=@('Review the two fictional blocking checks and their linked evidence.','Collect observations for checks marked Not Tested before revisiting the decision.')
     Exceptions=@(
         @{ Id='exception-approved'; Title='Planned review window'; Description='Fictional approved review window.'; CheckId='check-07'; FindingId='finding-02'; ResourceIds=@('resource-04'); Reason='Sample maintenance review'; Owner='Sample operations'; ApprovedBy='Fictional review board'; ApprovedAt=$SampleAssessmentDate.Date.AddDays(-6); ExpiresAt=$SampleAssessmentDate.Date.AddDays(24); Status='Approved' }
@@ -326,6 +352,22 @@ $null = $Report |
         [pscustomobject]@{ Observation='Owner record reviewed'; Resource='Identity Hub'; Category='Ownership'; Status='Informational'; Source='Sample inventory'; Time='15:35' }
         [pscustomobject]@{ Observation='Recovery source unavailable'; Resource='External assurance'; Category='Governance'; Status='NotChecked'; Source='No source supplied'; Time=$null }
     ) -Columns @('Observation','Resource','Category','Status','Source','Time') -PageSize 4
+
+$null = $Report |
+    Add-PSIView -Id hierarchy -Title 'Hierarchy' -Subtitle 'Fictional service structure and linked details' -Icon Relationship -Group Investigation |
+    Add-PSISection -Title 'Service hierarchy' |
+    Add-PSIRow -Columns 12 |
+    Add-PSITree -Id 'adaptive-hierarchy' -Title 'Service hierarchy' -Nodes $HierarchyNodes -Relationships $PresentationRelationships -DetailProperties @('Region','Owner','Availability')
+$null = $Report |
+    Add-PSIView -Id topology -Title 'Topology' -Subtitle 'Fictional dependencies and an evidence-only endpoint' -Icon Relationship -Group Investigation |
+    Add-PSISection -Title 'Service topology' |
+    Add-PSIRow -Columns 12 |
+    Add-PSITopology -Id 'adaptive-topology' -Title 'Service topology' -Nodes $HierarchyNodes -Relationships $PresentationRelationships -DetailProperties @('Region','Owner')
+$null = $Report |
+    Add-PSIView -Id relationships -Title 'Relationships' -Subtitle 'Incoming and outgoing service connections' -Icon Relationship -Group Investigation |
+    Add-PSISection -Title 'Relationship explorer' |
+    Add-PSIRow -Columns 12 |
+    Add-PSIRelationshipExplorer -Id 'adaptive-relationships' -Title 'Service relationships' -Nodes $HierarchyNodes -Relationships $PresentationRelationships
 
 $File = Export-PSIReport -Report $Report -Path $OutputPath
 Write-Host "Generated adaptive demo: $($File.FullName)"

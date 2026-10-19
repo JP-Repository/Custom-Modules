@@ -28,13 +28,22 @@ function Assert-PSIApplicationModel {
         @{ Kind='Evidence'; Field='ResourceIds'; Target='Resources' },
         @{ Kind='Relationships'; Field='SourceResourceId'; Target='Resources' },
         @{ Kind='Relationships'; Field='TargetResourceId'; Target='Resources' },
-        @{ Kind='Relationships'; Field='FindingIds'; Target='Findings' }
+        @{ Kind='Relationships'; Field='FindingIds'; Target='Findings' },
+        @{ Kind='Relationships'; Field='EvidenceIds'; Target='Evidence' }
     )
     foreach ($Reference in $References) {
         foreach ($Record in @((Get-PSIProperty -InputObject $Model -Name $Reference.Kind -DefaultValue @()))) {
             $Value = Get-PSIProperty -InputObject $Record -Name $Reference.Field
             if ($null -eq $Value) { continue }
             foreach ($ReferenceId in @($Value)) {
+                if ($Reference.Kind -eq 'Relationships' -and $Reference.Target -eq 'Resources' -and
+                    (Get-PSIProperty -InputObject $Record -Name 'IsExternal' -DefaultValue $false) -eq $true -and
+                    (Get-PSIProperty -InputObject $Record -Name 'EvidenceOnly' -DefaultValue $false) -eq $true -and
+                    -not $Ids.Resources.Contains([string] $ReferenceId)) {
+                    $OtherField = if ($Reference.Field -eq 'SourceResourceId') { 'TargetResourceId' } else { 'SourceResourceId' }
+                    $OtherId = [string] (Get-PSIProperty -InputObject $Record -Name $OtherField)
+                    if ($Ids.Resources.Contains($OtherId)) { continue }
+                }
                 if ([string]::IsNullOrWhiteSpace([string] $ReferenceId) -or -not $Ids[$Reference.Target].Contains([string] $ReferenceId)) {
                     throw "$($Reference.Kind) '$($Record.Id)' has broken $($Reference.Field) reference '$ReferenceId' to $($Reference.Target)."
                 }

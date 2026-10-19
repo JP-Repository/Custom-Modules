@@ -4,6 +4,7 @@ Describe 'AD DC readiness read-only live collector' {
         $script:Provider=Join-Path (Split-Path $PSScriptRoot -Parent) 'Examples/ActiveDirectory/DCReadiness'
         Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'PSInsightHTML.psd1') -Force
         foreach ($Path in @('SampleData/New-PSIADDCReadinessSample.ps1','Live/Get-PSIADReadOnlyAdapter.ps1','Live/Invoke-PSIADCollector.ps1','Live/Get-PSIADCollectionCoverage.ps1','Live/New-PSIADLiveSnapshot.ps1','Live/Get-PSIADRuleCoverage.ps1','Collect-PSIADDCReadiness.ps1','ConvertTo-PSIADDCReadinessModel.ps1','Get-PSIADDCReadinessOutcome.ps1','Test-PSIADDCReadiness.ps1')) { . (Join-Path $Provider $Path) }
+        . (Join-Path $Provider 'LiveFixture/New-PSIADLiveFixtureAdapter.ps1')
         function New-MockedADAdapter {
             $Adapter=@{
                 Domain = { param($Name) [pscustomobject]@{ DNSRoot=if ($Name) { $Name } else { 'child.example.test' }; Forest='example.test'; DomainMode='Windows2016Domain'; NetBIOSName='CHILD'; DomainSID='S-1-5-21-123'; PDCEmulator='dc-child.child.example.test'; RIDMaster='dc-child.child.example.test'; InfrastructureMaster='dc-child.child.example.test' } }
@@ -148,5 +149,119 @@ Describe 'AD DC readiness read-only live collector' {
     It 'has no executable modification cmdlets in the live collector' {
         $Files=@(Get-ChildItem (Join-Path $Provider 'Live') -Filter '*.ps1')
         foreach ($File in $Files) { (Get-Content $File.FullName -Raw) | Should -Not -Match '(?im)^\s*(Set-AD\w*|New-AD\w*|Remove-AD\w*|Add-AD\w*|Set-DnsServer\w*|Set-GP\w*|Restart-Service|Stop-Service|Start-Service|Restart-Computer)\b' }
+    }
+    It 'keeps three assessed DCs while retaining external Configuration and Schema evidence' {
+        $Live=ConvertTo-PSIADDCReadinessModel (Collect-PSIADDCReadiness -Domain root.example.test -CommandAdapter (New-PSIADLiveFixtureAdapter) -IncludeRemoteChecks -IncludeSecurityChecks -IncludeDependencyDiscovery)
+        $Live.DomainControllers.Count | Should -Be 3
+        @($Live.DomainControllers | Where-Object { $_.Domain -ne 'root.example.test' }).Count | Should -Be 0
+        @($Live.Replication | Where-Object { $_.ExternalToAssessmentScope -and $_.EvidenceOnly -and $_.Source -eq 'dc-child.child.example.test' }).Count | Should -Be 3
+        @($Live.Replication | Where-Object NamingContextKind -eq 'Configuration').Count | Should -Be 3
+        @($Live.Replication | Where-Object NamingContextKind -eq 'Schema').Count | Should -Be 3
+        @($Live.CollectionResults | Where-Object { $_.CollectorId -eq 'Partners' -and $_.Status -eq 'Collected' }).Count | Should -Be 3
+        @($Live.CollectionResults | Where-Object { $_.CollectorId -eq 'DNS' -and $_.Status -eq 'NotSupported' -and $_.ErrorCode -eq 'ToolUnavailable' }).Count | Should -Be 3
+        (@($Live.CollectionResults | Where-Object CollectorId -eq 'Dependencies')[0]).Status | Should -Be 'Partial'
+        @($Live.CollectionResults | Where-Object { $_.CollectorId -eq 'Security' -and $_.Status -eq 'Partial' }).Count | Should -Be 3
+        $Live.Time.PDCSource | Should -Be 'time.root.example.test'
+        (@($Live.CollectionResults | Where-Object CollectorId -eq 'PDCSourceReachability')[0]).Status | Should -Be 'NotTested'
+        $Checks=(Test-PSIADDCReadiness -Inventory $Live -TargetOS 2025).Assessment.Checks
+        (@($Checks | Where-Object Id -eq 'check-dns-forwarders')[0]).Status | Should -Be 'NotTested'
+        (@($Checks | Where-Object Id -eq 'check-time')[0]).ObservedState | Should -Match 'PDC source discovered: time.root.example.test'
+        (@($Checks | Where-Object Id -eq 'check-exchange')[0]).Status | Should -Be 'NotTested'
+    }
+    It 'classifies missing DNS tooling as NotSupported rather than an infrastructure failure' {
+        $Mock=New-MockedADAdapter
+        $Mock.Adapter.DNS={ param($HostName) throw [System.Management.Automation.CommandNotFoundException]::new('Get-DnsServerZone') }
+        $Live=Collect-PSIADDCReadiness -Domain child.example.test -CommandAdapter $Mock.Adapter -IncludeRemoteChecks
+        $Row=@($Live.CollectionResults | Where-Object CollectorId -eq 'DNS')[0]
+        $Row.Status | Should -Be 'NotSupported'
+        $Row.ErrorCode | Should -Be 'ToolUnavailable'
+        $Row.Notes | Should -Match 'management cmdlets are unavailable'
+    }
+    It 'checks local DNS cmdlet capability before issuing a DNS query' {
+        Mock Get-Module { [pscustomobject]@{ Name='Mock module' } } -ParameterFilter { $Name -in @('ActiveDirectory','DnsServer') }
+        Mock Import-Module { } -ParameterFilter { $Name -in @('ActiveDirectory','DnsServer') }
+        $Adapter=Get-PSIADReadOnlyAdapter
+        { & $Adapter.DNS 'dc.example.test' } | Should -Throw '*management cmdlets are unavailable*'
+    }
+    It 'accepts available DNS cmdlets and a successful empty response' {
+        Mock Get-Module { [pscustomobject]@{ Name='Mock module' } } -ParameterFilter { $Name -in @('ActiveDirectory','DnsServer') }
+        Mock Import-Module { } -ParameterFilter { $Name -in @('ActiveDirectory','DnsServer') }
+        function Get-DnsServerForwarder { [CmdletBinding()] param([string]$ComputerName) @() }
+        function Get-DnsServerZone { [CmdletBinding()] param([string]$ComputerName) @() }
+        function Get-DnsServerConditionalForwarderZone { [CmdletBinding()] param([string]$ComputerName) @() }
+        $Adapter=Get-PSIADReadOnlyAdapter
+        $Data=& $Adapter.DNS 'dc.example.test'
+        $Data.QueryStates.Forwarders | Should -Be 'Collected'
+        $Data.QueryStates.Zones | Should -Be 'Collected'
+        $Data.QueryStates.Conditional | Should -Be 'Collected'
+        @($Data.Forwarders).Count | Should -Be 0
+    }
+    It 'distinguishes DNS access denied and target unreachable from unavailable tooling' {
+        foreach ($Message in @('Access denied','Target unreachable')) {
+            $Mock=New-MockedADAdapter
+            $Mock.Adapter.DNS=[scriptblock]::Create("param(`$HostName) throw [System.InvalidOperationException]::new('$Message')")
+            $Live=Collect-PSIADDCReadiness -Domain child.example.test -CommandAdapter $Mock.Adapter -IncludeRemoteChecks
+            $Row=@($Live.CollectionResults | Where-Object CollectorId -eq 'DNS')[0]
+            $Row.Status | Should -Be 'Failed'
+            $Row.ErrorCode | Should -Not -Be 'ToolUnavailable'
+        }
+    }
+    It 'treats successful empty DNS data as collected evidence' {
+        $Mock=New-MockedADAdapter
+        $Mock.Adapter.DNS={ param($HostName) [pscustomobject]@{ Forwarders=@(); Zones=@(); Conditional=@(); QueryStates=@{ Forwarders='Collected'; Zones='Collected'; Conditional='Collected' }; Errors=@() } }
+        $Live=Collect-PSIADDCReadiness -Domain child.example.test -CommandAdapter $Mock.Adapter -IncludeRemoteChecks
+        $Row=@($Live.CollectionResults | Where-Object CollectorId -eq 'DNS')[0]
+        $Row.Status | Should -Be 'Collected'
+        $Row.ResourceCount | Should -Be 3
+        $Live.DomainControllers[0].ADIntegratedZone | Should -BeFalse
+    }
+    It 'credits only successful DNS subqueries and leaves failed zone evidence unknown' {
+        $Mock=New-MockedADAdapter
+        $Mock.Adapter.DNS={ param($HostName) [pscustomobject]@{ Forwarders=@('192.0.2.53'); Zones=@(); Conditional=@(); QueryStates=@{ Forwarders='Collected'; Zones='Failed'; Conditional='Collected' }; Errors=@('Zones: access denied') } }
+        $Live=Collect-PSIADDCReadiness -Domain child.example.test -CommandAdapter $Mock.Adapter -IncludeRemoteChecks
+        $Row=@($Live.CollectionResults | Where-Object CollectorId -eq 'DNS')[0]
+        $Row.Status | Should -Be 'Partial'
+        $Row.ResourceCount | Should -Be 2
+        $Row.ExpectedCount | Should -Be 3
+        $Live.DomainControllers[0].ADIntegratedZone | Should -BeNullOrEmpty
+        (@((Test-PSIADDCReadiness -Inventory (ConvertTo-PSIADDCReadinessModel $Live) -TargetOS 2025).Assessment.Checks | Where-Object Id -eq 'check-dns-zones')[0]).Status | Should -Be 'NotTested'
+    }
+    It 'preserves successful no-failure replication and marks genuinely incomplete queries Partial' {
+        $Adapter=New-PSIADLiveFixtureAdapter
+        $Healthy=Collect-PSIADDCReadiness -Domain root.example.test -CommandAdapter $Adapter
+        @($Healthy.CollectionResults | Where-Object { $_.CollectorId -eq 'Failures' -and $_.Status -eq 'Collected' }).Count | Should -Be 3
+        $Adapter.Partners={ param($HostName) if ($HostName -like 'dc-c*') { throw 'Partition query incomplete' }; @([pscustomobject]@{ Partner='dc-a.root.example.test'; Partition='DC=root,DC=example,DC=test'; ConsecutiveReplicationFailures=0; LastReplicationSuccess=(Get-Date).AddMinutes(-10); LastReplicationResult=0 }) }
+        $Partial=ConvertTo-PSIADDCReadinessModel (Collect-PSIADDCReadiness -Domain root.example.test -CommandAdapter $Adapter)
+        (@($Partial.CollectionCoverage.Collectors | Where-Object Collector -eq 'Partners')[0]).Status | Should -Be 'Partial'
+        (@((Test-PSIADDCReadiness -Inventory $Partial -TargetOS 2025).Assessment.Checks | Where-Object Id -eq 'check-replication')[0]).Status | Should -Be 'NotTested'
+    }
+    It 'distinguishes successful empty Exchange discovery from failed directory discovery' {
+        $Mock=New-MockedADAdapter
+        $Mock.Adapter.Dependencies={ param($Name) [pscustomobject]@{ Exchange=@(); PKI=@(); ExchangeQueryStatus='Collected'; PKIQueryStatus='Collected'; Errors=@() } }
+        $Empty=ConvertTo-PSIADDCReadinessModel (Collect-PSIADDCReadiness -Domain child.example.test -CommandAdapter $Mock.Adapter -IncludeDependencyDiscovery)
+        (@($Empty.CollectionResults | Where-Object CollectorId -eq 'Dependencies')[0]).Status | Should -Be 'Collected'
+        (@((Test-PSIADDCReadiness -Inventory $Empty -TargetOS 2025).Assessment.Checks | Where-Object Id -eq 'check-exchange')[0]).Status | Should -Be 'NotApplicable'
+        $Mock.Adapter.Dependencies={ param($Name) [pscustomobject]@{ Exchange=@(); PKI=@(); ExchangeQueryStatus='Failed'; PKIQueryStatus='Collected'; Errors=@('Exchange directory query unavailable (UnauthorizedAccessException)') } }
+        $Failed=ConvertTo-PSIADDCReadinessModel (Collect-PSIADDCReadiness -Domain child.example.test -CommandAdapter $Mock.Adapter -IncludeDependencyDiscovery)
+        $Row=@($Failed.CollectionResults | Where-Object CollectorId -eq 'Dependencies')[0]
+        $Row.Status | Should -Be 'Partial'
+        $Row.ExchangeQueryStatus | Should -Be 'Failed'
+        $Row.ExchangeConfidence | Should -Be 'None'
+        $Row.ErrorCode | Should -Be 'DirectoryQueryIncomplete'
+        (@((Test-PSIADDCReadiness -Inventory $Failed -TargetOS 2025).Assessment.Checks | Where-Object Id -eq 'check-exchange')[0]).Status | Should -Be 'NotTested'
+    }
+    It 'documents partial-credit coverage and excludes NotRequested from its denominator' {
+        $Rows=@(
+            [pscustomobject]@{ CollectorId='A'; Requested=$true; Status='Collected'; ExpectedCount=1; ResourceCount=1; Notes=''; Scope='A' },
+            [pscustomobject]@{ CollectorId='B'; Requested=$true; Status='Partial'; ExpectedCount=3; ResourceCount=2; Notes='one query unavailable'; Scope='B' },
+            [pscustomobject]@{ CollectorId='C'; Requested=$true; Status='NotSupported'; ExpectedCount=1; ResourceCount=0; Notes='tool unavailable'; Scope='C' },
+            [pscustomobject]@{ CollectorId='D'; Requested=$false; Status='NotRequested'; ExpectedCount=1; ResourceCount=0; Notes=''; Scope='D' }
+        )
+        $Coverage=Get-PSIADCollectionCoverage -Results $Rows
+        $Coverage.Expected | Should -Be 5
+        $Coverage.Collected | Should -Be 3
+        $Coverage.OverallPercent | Should -Be 60
+        (@($Coverage.Collectors | Where-Object Collector -eq 'D')[0]).Status | Should -Be 'NotRequested'
+        $Coverage.Formula | Should -Match 'NotSupported and Failed are both absent evidence'
     }
 }

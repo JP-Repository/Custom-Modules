@@ -113,7 +113,7 @@ Describe 'PSInsightHTML generic multi-view application workspace' {
         $Html | Should -Not -Match 'class="psi-app-view"'
     }
 
-    It 'generates all nine fictional demo views from the public component API' {
+    It 'generates the fictional demo views from the public component API' {
         $Path = Join-Path ([System.IO.Path]::GetTempPath()) (([guid]::NewGuid().ToString()) + '.html')
         try {
             & (Join-Path $script:WorkspaceRoot 'Examples/New-AdaptiveDemoReport.ps1') -OutputPath $Path -NoBrowser | Out-Null
@@ -121,7 +121,10 @@ Describe 'PSInsightHTML generic multi-view application workspace' {
             foreach ($Id in @('overview','checks','findings','resources','exceptions','security','policies','dependencies','evidence')) {
                 $Html | Should -Match ('id="psi-view-' + $Id + '"')
             }
-            ([regex]::Matches($Html, 'data-psi-app-view="')).Count | Should -Be 9
+            foreach ($Id in @('hierarchy','topology','relationships')) {
+                $Html | Should -Match ('id="psi-view-' + $Id + '"')
+            }
+            ([regex]::Matches($Html, 'data-psi-app-view="')).Count | Should -Be 12
             $Html | Should -Match 'adaptive-findings'
             $Html | Should -Match 'adaptive-resources'
             $Html | Should -Match 'adaptive-evidence'

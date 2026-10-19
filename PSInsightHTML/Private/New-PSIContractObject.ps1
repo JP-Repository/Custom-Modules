@@ -9,7 +9,7 @@ function New-PSIContractObject {
         Finding { @('Id','Title','Summary','Severity','Status','Category','Subcategory','ReadinessImpact','Frameworks','AffectedResourceIds','EvidenceIds','Recommendation','Validation','Owner','RemediationState','Relationships','Tags','Metadata') }
         Resource { @('Id','Name','Type','Status','Description','Properties','FindingIds','EvidenceIds','RelationshipIds','Tags','Metadata') }
         Evidence { @('Id','Title','Type','Source','CollectedAt','Summary','Data','FindingIds','ResourceIds','Tags','Metadata') }
-        Relationship { @('Id','SourceResourceId','TargetResourceId','Type','Direction','Status','Impact','FindingIds','Metadata') }
+        Relationship { @('Id','SourceResourceId','TargetResourceId','Type','Direction','Status','Impact','FindingIds','EvidenceIds','Label','Severity','Category','Description','IsExternal','EvidenceOnly','DisplayWeight','Metadata') }
     }
     $Required = switch ($Kind) {
         Finding { @('Id','Title','Severity','Status') }
@@ -39,6 +39,9 @@ function New-PSIContractObject {
         if ([string]::IsNullOrWhiteSpace([string] $Definition.Direction)) { $Definition.Direction = 'Directed' }
         if ($Definition.Direction -notin @('Directed','Bidirectional')) { throw "Relationship '$($Definition.Id)' has invalid Direction." }
         if ($Definition.Status -and -not (Resolve-PSIStatus -Status ([string] $Definition.Status) -AllowInvalid)) { throw "Relationship '$($Definition.Id)' has invalid Status." }
+        if ($Definition.Severity -and -not (Resolve-PSIStatus -Status ([string] $Definition.Severity) -AllowInvalid)) { throw "Relationship '$($Definition.Id)' has invalid Severity." }
+        if ($null -ne $Definition.DisplayWeight -and ($Definition.DisplayWeight -isnot [ValueType] -or [double] $Definition.DisplayWeight -lt 0)) { throw "Relationship '$($Definition.Id)' has invalid DisplayWeight." }
+        if ($Definition.IsExternal -and -not $Definition.EvidenceOnly) { throw "Relationship '$($Definition.Id)' external endpoints must be evidence-only." }
     }
     if ($Kind -eq 'Evidence' -and $null -ne $Definition.CollectedAt -and $Definition.CollectedAt -isnot [datetime]) { throw "Evidence '$($Definition.Id)' CollectedAt must be a DateTime." }
     $Lists = @('Frameworks','AffectedResourceIds','EvidenceIds','Relationships','Tags','FindingIds','RelationshipIds','ResourceIds')

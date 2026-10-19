@@ -29,6 +29,14 @@ function ConvertTo-PSIHtml {
     if ($Layout -notin @('Report', 'Application')) { throw "Unknown report layout '$Layout'." }
     $ReportViews = Get-PSIProperty -InputObject $Report -Name 'Views' -DefaultValue @()
     $IsMultiView = $Layout -eq 'Application' -and $null -ne $ReportViews -and $ReportViews.Count -gt 0
+    $HasRelationshipComponents = $false
+    foreach ($Part in $SectionsProperty.Value) {
+        foreach ($GridRow in $Part.Rows) {
+            foreach ($PartComponent in $GridRow.Components) {
+                if ($PartComponent.Type -in @('Tree','Topology','RelationshipExplorer')) { $HasRelationshipComponents = $true }
+            }
+        }
+    }
     if ($IsMultiView -and $null -ne $Report.PSObject.Properties['ApplicationModel']) {
         [void] (Assert-PSIApplicationLinks -Report $Report)
     }
@@ -50,6 +58,12 @@ function ConvertTo-PSIHtml {
     if ($Layout -eq 'Application') {
         $AppStylesheetPath = Join-Path -Path $script:ModuleRoot -ChildPath 'Assets/CSS/psi-application.css'
         $ThemeStylesheet += "`n" + (Get-Content -LiteralPath $AppStylesheetPath -Raw -ErrorAction Stop)
+        if ($HasRelationshipComponents) {
+            $ThemeStylesheet += "`n" + (Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/CSS/psi-relationships.css') -Raw -ErrorAction Stop)
+        }
+        if ($EnableReportPrint) {
+            $ThemeStylesheet += "`n" + (Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/CSS/psi-print.css') -Raw -ErrorAction Stop)
+        }
     }
     $SectionMarkup = [System.Text.StringBuilder]::new()
     $NavigationMarkup = [System.Text.StringBuilder]::new()
@@ -183,6 +197,9 @@ function ConvertTo-PSIHtml {
                     }
                     'Explorer' {
                         [void] $SectionMarkup.AppendLine((ConvertTo-PSIExplorerHtml -Properties $Properties))
+                    }
+                    { $_ -in @('Tree','Topology','RelationshipExplorer') } {
+                        [void] $SectionMarkup.AppendLine((ConvertTo-PSIRelationshipComponentHtml -Type ([string] $Component.Type) -Properties $Properties))
                     }
                     'Text' {
                         $Text = ConvertTo-PSIHtmlEncoded -Value (Get-PSIProperty -InputObject $Properties -Name 'Text')
@@ -780,7 +797,9 @@ function ConvertTo-PSIHtml {
         return ConvertTo-PSIApplicationShell -Report $Report -Styles $ThemeStylesheet -Sections $SectionMarkup.ToString() `
             -Navigation $ApplicationNavigation -Dialog $DrillDownMarkup -ExportToolbar $ReportExportMarkup `
             -ExportScript $ExportScript -StatusScript $StatusRegistryScript -InteractionScript $InteractionScript `
-            -TableScript $TableScript -HasTableSearch $HasSearchableTableComponents -IsMultiView $IsMultiView
+            -EnableReportPrint $EnableReportPrint `
+            -TableScript $TableScript -HasTableSearch $HasSearchableTableComponents -IsMultiView $IsMultiView `
+            -HasRelationshipComponents $HasRelationshipComponents
     }
 
     if ($null -ne $Report.PSObject.Properties['Assessments'] -and $Report.Assessments.Count -gt 0) {

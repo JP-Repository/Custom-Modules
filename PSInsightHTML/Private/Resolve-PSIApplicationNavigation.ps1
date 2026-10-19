@@ -20,6 +20,12 @@ function Resolve-PSIApplicationNavigation {
     foreach ($Section in $Sections) {
         foreach ($Row in $Section.Rows) {
             foreach ($Component in $Row.Components) {
+                if ($Component.Type -in @('Tree','Topology','RelationshipExplorer')) {
+                    $PresentationId = [string] (Get-PSIProperty -InputObject $Component.Properties -Name 'Id')
+                    if ($PresentationId -cnotmatch '^[A-Za-z][A-Za-z0-9_-]*$' -or -not $UsedIds.Add($PresentationId)) {
+                        throw "Relationship presentation ID '$PresentationId' is invalid or duplicated."
+                    }
+                }
                 if ($Component.Type -ne 'Explorer') { continue }
                 $ExplorerId = [string] (Get-PSIProperty -InputObject $Component.Properties -Name 'Id')
                 if ($ExplorerId -cnotmatch '^[A-Za-z][A-Za-z0-9_-]*$' -or

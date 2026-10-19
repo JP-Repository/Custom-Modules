@@ -176,6 +176,9 @@
   root.PSIExport = { escapeCsv: escapeCsv, toCsv: toCsv, toXlsx: toXlsx, safeName: safeName, fileName: fileName,
     attachToolbar: attachToolbar, downloadCsv: function (contents, name) { download(contents, name, 'text/csv;charset=utf-8'); } };
   document.querySelectorAll('[data-psi-export-scope="report"]').forEach(function (toolbar) {
-    attachToolbar(toolbar, function () { return { print: function () { root.print(); } }; });
+    attachToolbar(toolbar, function () { return { print: function () {
+      if (typeof root.PSIPrint === 'object' && typeof root.PSIPrint.print === 'function') { root.PSIPrint.print(); }
+      else { root.print(); }
+    } }; });
   });
 }(window));
