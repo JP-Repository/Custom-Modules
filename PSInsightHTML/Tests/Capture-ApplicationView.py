@@ -82,6 +82,8 @@ def main():
     parser.add_argument('--relationship-node-id', default='')
     parser.add_argument('--relationship-edge-id', default='')
     parser.add_argument('--relationship-detail-filter', default='', help='Filter label=value, such as Site=West')
+    parser.add_argument('--resource', default='', help='Select a synthetic Resource Explorer node ID')
+    parser.add_argument('--inspector-tab', default='', help='Select a Context Inspector tab by visible label')
     args = parser.parse_args()
     chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
     report_dir = Path(__file__).resolve().parents[1] / 'Reports'
@@ -144,6 +146,10 @@ def main():
                 evaluate("document.querySelector('[data-psi-app-toggle]').click()")
             if args.view != 'overview':
                 evaluate("document.querySelector('#psi-app-item-' + %s).click()" % json.dumps(args.view))
+            if args.resource:
+                evaluate("(()=>{let b=document.querySelector('[data-psi-resource-restore]');if(innerWidth<=900)b.click();document.querySelector('[data-psi-resource-node=' + %s + ']').click()})()" % json.dumps('"' + args.resource + '"'))
+            if args.inspector_tab:
+                evaluate("[...document.querySelectorAll('[data-psi-inspector-tabs] [role=tab]')].find(x=>x.textContent.trim()===%s).click()" % json.dumps(args.inspector_tab))
             if args.second_item:
                 evaluate("document.querySelector('[data-psi-app-view]:not([hidden]) [data-psi-explorer-item=\"1\"]').click()")
             if args.item_index >= 0:
@@ -223,11 +229,14 @@ def main():
             metrics = evaluate("JSON.stringify((()=>{let v=[...document.querySelectorAll('[data-psi-app-view]')],n=[...document.querySelectorAll('[data-psi-app-item]')],a=n.filter(x=>x.hasAttribute('aria-current'))[0],s=a&&a.querySelector('.psi-icon-filled'),r=a&&a.querySelector('.psi-icon-regular'),x=document.querySelector('[data-psi-app-view]:not([hidden]) [data-psi-app-explorer]');return {view:v.filter(x=>!x.hidden).map(x=>x.getAttribute('data-psi-app-view')),viewCount:v.length,heading:document.querySelector('[data-psi-app-view-title]').textContent,selected:a&&a.id,filled:s&&getComputedStyle(s).display!=='none'&&s.getBBox().width>0,regularHidden:r&&getComputedStyle(r).display==='none',navigationIcons:n.filter(x=>{let i=x.querySelector('.psi-icon-regular');return i&&i.querySelector('path')}).length,navOpen:document.querySelector('.psi-app-shell').classList.contains('psi-app-nav-open'),focus:document.activeElement.getAttribute('aria-label')||document.activeElement.id,scrollWidth:document.documentElement.scrollWidth,innerWidth:innerWidth,theme:document.documentElement.getAttribute('data-theme'),selectedRecord:document.querySelector('[data-psi-app-view]:not([hidden]) [data-psi-explorer-item][aria-selected=true]')?.textContent.trim()||null,visibleItems:x?[...x.querySelectorAll('[data-psi-explorer-item]')].filter(i=>!i.hidden).length:null}})())")
             assessment_metrics = evaluate("JSON.stringify((()=>{let c=document.querySelector('[data-psi-app-view]:not([hidden]) [data-psi-entity-type=\"Check\"]');return {decision:document.querySelector('.psi-assessment-decision')?.textContent.trim()||null,score:document.querySelector('.psi-assessment-gauge strong')?.textContent.trim()||null,checkVisible:c?[...c.querySelectorAll('[data-psi-explorer-item]')].filter(i=>!i.hidden).length:null,checkCategory:c?.querySelector('[data-psi-explorer-filter=\"CategoryId\"]')?.value||null}})())")
             palette_metrics = evaluate("JSON.stringify((()=>{let p=document.querySelector('[data-psi-global-search-backdrop]'),r=document.querySelector('[data-psi-global-search-results]'),i=document.querySelector('[data-psi-global-search-input]'),e=document.querySelector('[data-psi-export-scope=report] [data-psi-export-menu]'),v=document.querySelector('[data-psi-app-view]:not([hidden])'),s=v?.querySelector('[data-psi-explorer-search], [data-psi-search]');return p?{open:!p.hidden,indexCount:window.PSIGlobalSearch?.count,indexBytes:window.PSIGlobalSearch?.indexBytes,queryMs:%s,options:[...r.querySelectorAll('[role=option]')].map(x=>x.textContent.trim()),selected:i.getAttribute('aria-activedescendant'),focus:document.activeElement.id||document.activeElement.getAttribute('aria-label'),record:v?.querySelector('[data-psi-explorer-item][aria-selected=true]')?.getAttribute('data-psi-entity-id')||null,localSearch:s?.value||'',visibleRecords:v?[...v.querySelectorAll('[data-psi-explorer-item]')].filter(x=>!x.hidden).length:null,exportOpen:e?!e.hidden:false,theme:document.documentElement.getAttribute('data-theme')}:null})())" % ('null' if palette_timing is None else str(palette_timing)))
+            resource_metrics = evaluate("JSON.stringify((()=>{let n=document.querySelector('[data-psi-resource-node][aria-selected=true]'),h=document.querySelector('[data-psi-resource-header]'),i=document.querySelector('[data-psi-context-inspector]');return n?{selected:n.getAttribute('data-psi-resource-node'),header:h?.querySelector('[data-psi-resource-header-title]')?.textContent,status:h?.querySelector('[data-psi-resource-header-status]')?.textContent,tags:h?.querySelector('[data-psi-resource-header-tags]')?.textContent,inspector:i?.querySelector('[data-psi-inspector-title]')?.textContent,inspectorStatus:i?.querySelector('[data-psi-inspector-status]')?.textContent,tabs:i?[...i.querySelectorAll('[role=tab]')].map(x=>x.textContent):[],activeTab:i?.querySelector('[role=tab][aria-selected=true]')?.textContent,panel:i?.querySelector('[role=tabpanel]')?.textContent.slice(0,200),overflow:document.documentElement.scrollWidth>innerWidth}:null})())")
             screenshot = call('Page.captureScreenshot', {'format': 'png', 'captureBeyondViewport': False})['data']
             args.output.write_bytes(base64.b64decode(screenshot))
             print(metrics)
             print(assessment_metrics)
             print(palette_metrics)
+            if resource_metrics is not None:
+                print(resource_metrics)
             if relationship_metrics is not None:
                 print(relationship_metrics)
             if detail_filter_metrics is not None:

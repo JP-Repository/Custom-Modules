@@ -18,6 +18,8 @@
         'Add-PSISection'
         'Add-PSIView'
         'Add-PSIExplorer'
+        'Add-PSIResourceExplorer'
+        'Add-PSIInspector'
         'Add-PSITree'
         'Add-PSITopology'
         'Add-PSIRelationshipExplorer'

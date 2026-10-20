@@ -67,6 +67,9 @@ function ConvertTo-PSIHtml {
         $AppStylesheetPath = Join-Path -Path $script:ModuleRoot -ChildPath 'Assets/CSS/psi-application.css'
         $ThemeStylesheet += "`n" + (Get-Content -LiteralPath $AppStylesheetPath -Raw -ErrorAction Stop)
         $ThemeStylesheet += "`n" + (Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/CSS/psi-fluent-explorer.css') -Raw -ErrorAction Stop)
+        if ($null -ne $Report.PSObject.Properties['ResourceExplorer']) {
+            $ThemeStylesheet += "`n" + (Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/CSS/psi-resource-workspace.css') -Raw -ErrorAction Stop)
+        }
         if ($HasRelationshipComponents) {
             $ThemeStylesheet += "`n" + (Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/CSS/psi-relationships.css') -Raw -ErrorAction Stop)
         }
