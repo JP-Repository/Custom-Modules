@@ -1,0 +1,150 @@
+/* Application-only density and Fluent Explorer tokens. Embedded after the base Application CSS. */
+html[data-psi-layout="Application"][data-psi-density="Compact"] {
+  --psi-app-space-xs: 6px;
+  --psi-app-space-sm: 12px;
+  --psi-app-space-md: 16px;
+  --psi-app-space-lg: 16px;
+  --psi-app-space-xl: 20px;
+  --psi-app-radius-md: 9px;
+  --psi-app-radius-lg: 10px;
+  --psi-app-command-height: 68px;
+  --psi-app-gutter: 18px;
+}
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-command { min-height: 68px; }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-heading h1 { font-size: clamp(19px, 1.8vw, 24px); }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-subtitle { font-size: 12px; }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-content .psi-section { margin-top: 16px; }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-content .psi-section h2 { min-height: 34px; margin-bottom: 10px; font-size: 18px; }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-section-icon { width: 30px; height: 30px; flex: 0 0 30px; }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-content .psi-kpi-card { min-height: 88px; padding: 12px 14px; }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-content .psi-kpi-value { margin-top: 7px; font-size: clamp(20px, 2vw, 24px); }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-content .psi-kpi-icon { top: 10px; right: 10px; width: 30px; height: 30px; }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-content .psi-table-card,
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-content .psi-chart-card { padding: 14px; }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-content .psi-table-card th,
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-content .psi-table-card td { padding-top: 7px; padding-bottom: 7px; }
+html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-view-tab { min-height: 36px; }
+
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] {
+  color-scheme: light;
+  --psi-page: #f4f7fb;
+  --psi-background: var(--psi-page);
+  --psi-surface: #ffffff;
+  --psi-surface-subtle: #f7f9fc;
+  --psi-surface-elevated: #ffffff;
+  --psi-surface-interactive: #e8f2ff;
+  --psi-surface-raised: #ffffff;
+  --psi-text: #1d2b3b;
+  --psi-text-secondary: #40556d;
+  --psi-text-muted: #607188;
+  --psi-muted: var(--psi-text-muted);
+  --psi-border: #e1e7ef;
+  --psi-border-strong: #b9cde8;
+  --psi-accent: #1769e0;
+  --psi-accent-hover: #1057bd;
+  --psi-accent-contrast: #ffffff;
+  --psi-focus: #1769e0;
+  --psi-status-healthy: #168454;
+  --psi-status-warning: #aa7100;
+  --psi-status-critical: #c7373d;
+  --psi-status-info: #1769e0;
+  --psi-status-unknown: #657488;
+  --psi-status-not-checked: #657488;
+  --psi-healthy-surface: #eef9f3;
+  --psi-warning-surface: #fff7e8;
+  --psi-critical-surface: #fff0f0;
+  --psi-informational-surface: #edf5ff;
+  --psi-neutral-surface: #f2f5f8;
+  --psi-healthy-outline: #c6e7d3;
+  --psi-warning-outline: #edd8a8;
+  --psi-critical-outline: #f0c8ca;
+  --psi-informational-outline: #c7ddfa;
+  --psi-neutral-outline: #d8e0e8;
+  --psi-app-nav-width: 84px;
+  --psi-app-page: var(--psi-page);
+  --psi-app-surface: var(--psi-surface);
+  --psi-app-surface-raised: var(--psi-surface-elevated);
+  --psi-app-border: var(--psi-border);
+  --psi-app-text: var(--psi-text);
+  --psi-app-text-secondary: var(--psi-text-secondary);
+  --psi-app-text-muted: var(--psi-text-muted);
+  --psi-app-accent: var(--psi-accent);
+  --psi-app-hover: var(--psi-surface-subtle);
+  --psi-app-selected: var(--psi-surface-interactive);
+  --psi-app-icon-surface: var(--psi-surface-subtle);
+  --psi-app-focus: var(--psi-focus);
+  --psi-app-elevation: 0 1px 2px rgba(25, 48, 78, .04);
+}
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"][data-theme="Dark"] {
+  color-scheme: dark;
+  --psi-page: #101923; --psi-surface: #1b2836; --psi-surface-subtle: #223244;
+  --psi-surface-elevated: #1d2c3c; --psi-surface-interactive: #183d67; --psi-surface-raised: #1d2c3c;
+  --psi-text: #edf3fa; --psi-text-secondary: #c3d1df; --psi-text-muted: #9eb0c3; --psi-muted: var(--psi-text-muted);
+  --psi-border: #34475a; --psi-border-strong: #567699; --psi-accent: #80b5ff;
+  --psi-accent-hover: #a7ccff; --psi-accent-contrast: #0c1d30; --psi-focus: #a7ccff;
+  --psi-status-healthy: #70d4a1; --psi-status-warning: #f0c16d; --psi-status-critical: #f08c91;
+  --psi-status-info: #8cbeff; --psi-status-unknown: #b0bece; --psi-status-not-checked: #a8b7c6;
+  --psi-healthy-surface: #1d3a31; --psi-warning-surface: #423827; --psi-critical-surface: #442d35;
+  --psi-informational-surface: #203a55; --psi-neutral-surface: #2a3949;
+  --psi-healthy-outline: #426b57; --psi-warning-outline: #776142; --psi-critical-outline: #82545e;
+  --psi-informational-outline: #496d96; --psi-neutral-outline: #53677a;
+  --psi-app-elevation: 0 1px 2px rgba(0, 0, 0, .16);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"][data-theme="Auto"] {
+    color-scheme: dark;
+    --psi-page: #101923; --psi-surface: #1b2836; --psi-surface-subtle: #223244;
+    --psi-surface-elevated: #1d2c3c; --psi-surface-interactive: #183d67; --psi-surface-raised: #1d2c3c;
+    --psi-text: #edf3fa; --psi-text-secondary: #c3d1df; --psi-text-muted: #9eb0c3; --psi-muted: var(--psi-text-muted);
+    --psi-border: #34475a; --psi-border-strong: #567699; --psi-accent: #80b5ff;
+    --psi-accent-hover: #a7ccff; --psi-accent-contrast: #0c1d30; --psi-focus: #a7ccff;
+    --psi-status-healthy: #70d4a1; --psi-status-warning: #f0c16d; --psi-status-critical: #f08c91;
+    --psi-status-info: #8cbeff; --psi-status-unknown: #b0bece; --psi-status-not-checked: #a8b7c6;
+    --psi-healthy-surface: #1d3a31; --psi-warning-surface: #423827; --psi-critical-surface: #442d35;
+    --psi-informational-surface: #203a55; --psi-neutral-surface: #2a3949;
+    --psi-healthy-outline: #426b57; --psi-warning-outline: #776142; --psi-critical-outline: #82545e;
+    --psi-informational-outline: #496d96; --psi-neutral-outline: #53677a;
+    --psi-app-elevation: 0 1px 2px rgba(0, 0, 0, .16);
+  }
+}
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-shell { grid-template-columns: var(--psi-app-nav-width) minmax(0, 1fr); }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-sidebar { align-items: center; padding: 14px 8px; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-brand { justify-content: center; min-height: 52px; width: 100%; padding: 0 0 12px; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-brand > span:nth-child(2),
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-sidebar-foot,
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-heading,
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-badge { display: none; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-sidebar nav { width: 100%; padding-top: 12px; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-group + .psi-app-nav-group { margin-top: 10px; padding-top: 10px; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-item { justify-content: center; width: 100%; min-height: 48px; padding: 6px; border-radius: var(--psi-app-radius-md); }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-icon { flex-basis: 36px; width: 36px; height: 36px; background: transparent; border: 0; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-item[aria-current] { box-shadow: inset 3px 0 var(--psi-app-accent); }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-item[aria-current] .psi-app-nav-icon { color: var(--psi-app-accent); background: transparent; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-workspace { grid-template-columns: minmax(0, 1fr); width: 100%; max-width: none; gap: 0; margin: 0; padding: 16px var(--psi-app-gutter) 36px; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-context { display: none; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-command { box-shadow: none; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-content { width: 100%; max-width: none; }
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-content .psi-kpi-card,
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-content .psi-table-card,
+html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-content .psi-chart-card { box-shadow: var(--psi-app-elevation); }
+@media (max-width: 900px) and (min-width: 641px) {
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-shell { display: grid; grid-template-columns: 68px minmax(0, 1fr); }
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-sidebar { position: sticky; left: auto; width: 68px; height: 100vh; transform: none; visibility: visible; box-shadow: none; }
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-menu-button,
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-close { display: none; }
+}
+@media (max-width: 640px) {
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-shell { display: block; }
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-sidebar { align-items: stretch; width: min(280px, calc(100vw - 40px)); padding: 14px 12px; }
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-brand { justify-content: flex-start; }
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-brand > span:nth-child(2),
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-heading { display: block; }
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-item { justify-content: flex-start; gap: 10px; padding: 6px 10px; }
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-nav-label { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; white-space: normal; }
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] .psi-app-workspace { padding: 12px 12px 28px; }
+  html[data-psi-layout="Application"][data-psi-density="Compact"] .psi-app-command { min-height: 0; }
+}
+@media print {
+  html[data-psi-layout="Application"][data-psi-navigation="FluentExplorer"] { --psi-page: #ffffff; --psi-surface: #ffffff; color-scheme: light; }
+}

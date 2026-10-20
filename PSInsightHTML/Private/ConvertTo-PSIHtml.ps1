@@ -27,6 +27,14 @@ function ConvertTo-PSIHtml {
     }
     $Layout = [string] (Get-PSIProperty -InputObject $Report -Name 'Layout' -DefaultValue 'Report')
     if ($Layout -notin @('Report', 'Application')) { throw "Unknown report layout '$Layout'." }
+    $Navigation = [string] (Get-PSIProperty -InputObject $Report -Name 'Navigation' -DefaultValue 'Sidebar')
+    $Density = [string] (Get-PSIProperty -InputObject $Report -Name 'Density' -DefaultValue 'Comfortable')
+    if ($Navigation -notin @('Sidebar', 'FluentExplorer') -or $Density -notin @('Comfortable', 'Compact')) {
+        throw 'Unknown Application navigation or density option.'
+    }
+    if ($Layout -ne 'Application' -and ($Navigation -ne 'Sidebar' -or $Density -ne 'Comfortable')) {
+        throw 'Navigation and Density options require Application layout.'
+    }
     $ReportViews = Get-PSIProperty -InputObject $Report -Name 'Views' -DefaultValue @()
     $IsMultiView = $Layout -eq 'Application' -and $null -ne $ReportViews -and $ReportViews.Count -gt 0
     $HasRelationshipComponents = $false
@@ -58,6 +66,7 @@ function ConvertTo-PSIHtml {
     if ($Layout -eq 'Application') {
         $AppStylesheetPath = Join-Path -Path $script:ModuleRoot -ChildPath 'Assets/CSS/psi-application.css'
         $ThemeStylesheet += "`n" + (Get-Content -LiteralPath $AppStylesheetPath -Raw -ErrorAction Stop)
+        $ThemeStylesheet += "`n" + (Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/CSS/psi-fluent-explorer.css') -Raw -ErrorAction Stop)
         if ($HasRelationshipComponents) {
             $ThemeStylesheet += "`n" + (Get-Content -LiteralPath (Join-Path $script:ModuleRoot 'Assets/CSS/psi-relationships.css') -Raw -ErrorAction Stop)
         }

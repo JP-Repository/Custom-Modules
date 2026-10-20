@@ -36,11 +36,22 @@ function New-PSIReport {
         [string] $Layout = 'Report',
 
         [Parameter()]
-        [object[]] $NavigationGroups = @()
+        [object[]] $NavigationGroups = @(),
+
+        [Parameter()]
+        [ValidateSet('Sidebar', 'FluentExplorer')]
+        [string] $Navigation = 'Sidebar',
+
+        [Parameter()]
+        [ValidateSet('Comfortable', 'Compact')]
+        [string] $Density = 'Comfortable'
     )
 
     if ($Layout -eq 'Report' -and $NavigationGroups.Count -gt 0) {
         throw 'NavigationGroups require -Layout Application.'
+    }
+    if ($Layout -eq 'Report' -and ($Navigation -ne 'Sidebar' -or $Density -ne 'Comfortable')) {
+        throw 'Navigation and Density options require -Layout Application.'
     }
 
     $Report = [pscustomobject]@{
@@ -56,6 +67,8 @@ function New-PSIReport {
     if ($Layout -eq 'Application') {
         $Report | Add-Member -NotePropertyName Layout -NotePropertyValue $Layout
         $Report | Add-Member -NotePropertyName NavigationGroups -NotePropertyValue @($NavigationGroups)
+        $Report | Add-Member -NotePropertyName Navigation -NotePropertyValue $Navigation
+        $Report | Add-Member -NotePropertyName Density -NotePropertyValue $Density
         $Report | Add-Member -NotePropertyName Views -NotePropertyValue ([System.Collections.Generic.List[object]]::new())
         $Report | Add-Member -NotePropertyName ActiveViewId -NotePropertyValue ''
     }

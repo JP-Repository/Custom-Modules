@@ -22,6 +22,8 @@ function ConvertTo-PSIApplicationShell {
     $GeneratedOn = ConvertTo-PSIHtmlEncoded -Value ([datetime] $Report.GeneratedOn).ToString('yyyy-MM-dd HH:mm:ss zzz')
     $ModuleVersion = ConvertTo-PSIHtmlEncoded -Value $Report.ModuleVersion
     $Theme = [string] $Report.Theme
+    $NavigationMode = [string] (Get-PSIProperty -InputObject $Report -Name 'Navigation' -DefaultValue 'Sidebar')
+    $Density = [string] (Get-PSIProperty -InputObject $Report -Name 'Density' -DefaultValue 'Comfortable')
     $NavMarkup = [System.Text.StringBuilder]::new()
     foreach ($Group in $Navigation) {
         $GroupLabel = ConvertTo-PSIHtmlEncoded -Value $Group.Label
@@ -35,18 +37,19 @@ function ConvertTo-PSIApplicationShell {
             $Badge = if ([string]::IsNullOrWhiteSpace($Item.Badge)) { '' } else {
                 '<span class="psi-app-nav-badge">' + (ConvertTo-PSIHtmlEncoded -Value $Item.Badge) + '</span>'
             }
+            $ItemTitle = if ($NavigationMode -eq 'FluentExplorer') { " title=`"$ItemLabel`"" } else { '' }
             if ($Item.Disabled) {
-                [void] $NavMarkup.AppendLine("<li><span id=`"$ItemId`" class=`"psi-app-nav-item`" aria-disabled=`"true`">$Icon<span class=`"psi-app-nav-label`">$ItemLabel</span>$Badge</span></li>")
+                [void] $NavMarkup.AppendLine("<li><span id=`"$ItemId`" class=`"psi-app-nav-item`" aria-disabled=`"true`"$ItemTitle>$Icon<span class=`"psi-app-nav-label`">$ItemLabel</span>$Badge</span></li>")
             }
             else {
                 $Current = if ($Item.Selected) {
                     if ($IsMultiView) { ' aria-current="page"' } else { ' aria-current="location"' }
                 } else { '' }
                 if ($IsMultiView) {
-                    [void] $NavMarkup.AppendLine("<li><button type=`"button`" id=`"$ItemId`" class=`"psi-app-nav-item`" data-psi-app-item data-psi-app-view-target=`"$($Item.Id)`" aria-controls=`"$($Item.Target)`"$Current>$Icon<span class=`"psi-app-nav-label`">$ItemLabel</span>$Badge</button></li>")
+                    [void] $NavMarkup.AppendLine("<li><button type=`"button`" id=`"$ItemId`" class=`"psi-app-nav-item`" data-psi-app-item data-psi-app-view-target=`"$($Item.Id)`" aria-controls=`"$($Item.Target)`"$Current$ItemTitle>$Icon<span class=`"psi-app-nav-label`">$ItemLabel</span>$Badge</button></li>")
                 }
                 else {
-                    [void] $NavMarkup.AppendLine("<li><a id=`"$ItemId`" class=`"psi-app-nav-item`" href=`"#$($Item.Target)`" data-psi-app-item$Current>$Icon<span class=`"psi-app-nav-label`">$ItemLabel</span>$Badge</a></li>")
+                    [void] $NavMarkup.AppendLine("<li><a id=`"$ItemId`" class=`"psi-app-nav-item`" href=`"#$($Item.Target)`" data-psi-app-item$Current$ItemTitle>$Icon<span class=`"psi-app-nav-label`">$ItemLabel</span>$Badge</a></li>")
                 }
             }
         }
@@ -132,7 +135,7 @@ function ConvertTo-PSIApplicationShell {
 
     @"
 <!DOCTYPE html>
-<html lang="en" data-theme="$Theme" data-psi-layout="Application" data-psi-workspace="$WorkspaceMode">
+<html lang="en" data-theme="$Theme" data-psi-layout="Application" data-psi-workspace="$WorkspaceMode" data-psi-navigation="$NavigationMode" data-psi-density="$Density">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -143,7 +146,7 @@ $Styles
 </head>
 <body>
   <div class="psi-app-shell">
-    <aside class="psi-app-sidebar" id="psi-app-navigation" aria-label="Report navigation">
+    <aside class="psi-app-sidebar" id="psi-app-navigation" aria-label="$(if ($NavigationMode -eq 'FluentExplorer') { 'Global navigation' } else { 'Report navigation' })">
       <div class="psi-app-brand"><span class="psi-app-brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48" width="27" height="27" fill="none"><path d="M24 3 43 14v20L24 45 5 34V14L24 3Z" stroke="currentColor" stroke-width="2.5"/><path d="M15 31V17h8a5 5 0 0 1 0 10h-4M27 31h7M27 31a4 4 0 0 1 0-8h7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><strong>PSInsightHTML</strong><small>Report workspace</small></span><button type="button" class="psi-app-nav-close" data-psi-app-close aria-label="Close navigation">$CloseIcon</button></div>
       <nav aria-label="Report sections">
 $($NavMarkup.ToString())      </nav>
