@@ -35,6 +35,12 @@ function Add-PSIView {
         [string] $Badge = '',
 
         [Parameter()]
+        [Nullable[int]] $TabCount,
+
+        [Parameter()]
+        [switch] $Disabled,
+
+        [Parameter()]
         [object[]] $Commands = @(),
 
         [Parameter()]
@@ -59,6 +65,8 @@ function Add-PSIView {
         if ($Initial -and @($Report.Views | Where-Object { $_.State.Initial }).Count -gt 0) {
             throw 'Only one application view can be initial.'
         }
+        if ($Initial -and $Disabled) { throw 'The initial application view cannot be disabled.' }
+        if ($null -ne $TabCount -and [int]$TabCount -lt 0) { throw 'TabCount must be nonnegative.' }
         if ([string]::IsNullOrWhiteSpace($Group)) { throw 'Application view Group cannot be empty.' }
         [void] (Get-PSIIcon -Name $Icon -Variant Regular -Strict)
         [void] (Get-PSIIcon -Name $Icon -Variant Filled -Strict)
@@ -80,6 +88,8 @@ function Add-PSIView {
             Icon     = $Icon
             Group    = $Group
             Badge    = $Badge
+            TabCount = $TabCount
+            Disabled = [bool] $Disabled
             Sections = [System.Collections.Generic.List[object]]::new()
             Commands = $ViewCommands
             State    = @{ Initial = [bool] $Initial }

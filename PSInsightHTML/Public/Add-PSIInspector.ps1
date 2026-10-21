@@ -35,6 +35,26 @@ function Add-PSIInspector {
             foreach ($Key in $Properties.Keys) { $Fields.Add([pscustomobject]@{ Label=[string]$Key; Value=[string]$Properties[$Key] }) }
             $Tags = [System.Collections.Generic.List[object]]::new()
             foreach ($Key in $Metadata.Keys) { $Tags.Add([pscustomobject]@{ Label=[string]$Key; Value=[string]$Metadata[$Key] }) }
+            $Breadcrumb = [System.Collections.Generic.List[string]]::new()
+            $RawBreadcrumb = Get-PSIProperty $Item 'Breadcrumb' -DefaultValue @()
+            foreach ($Part in $RawBreadcrumb) {
+                if ([string]::IsNullOrWhiteSpace([string]$Part)) { throw "Inspector item '$ItemId' has an empty breadcrumb part." }
+                $Breadcrumb.Add([string]$Part)
+            }
+            $Actions = [System.Collections.Generic.List[object]]::new()
+            $RawActions = Get-PSIProperty $Item 'Actions' -DefaultValue @()
+            foreach ($Action in $RawActions) {
+                $ActionLabel = [string](Get-PSIProperty $Action 'Label')
+                $ActionView = [string](Get-PSIProperty $Action 'TargetView' -DefaultValue '')
+                $ActionResource = [string](Get-PSIProperty $Action 'ResourceId' -DefaultValue '')
+                if ([string]::IsNullOrWhiteSpace($ActionLabel) -or
+                    (($ActionView -cnotmatch '^$|^[A-Za-z][A-Za-z0-9_-]*$') -or
+                    ($ActionResource -and -not $NodeIds.ContainsKey($ActionResource))) -or
+                    (-not $ActionView -and -not $ActionResource)) {
+                    throw "Inspector item '$ItemId' has an invalid header action."
+                }
+                $Actions.Add([pscustomobject]@{ Label=$ActionLabel; TargetView=$ActionView; ResourceId=$ActionResource })
+            }
             $Sections = [System.Collections.Generic.List[object]]::new()
             $SectionIds = @{}
             $RawSections = Get-PSIProperty $Item 'Sections' -DefaultValue @()
@@ -69,6 +89,7 @@ function Add-PSIInspector {
                 Subtitle=[string] (Get-PSIProperty $Item 'Subtitle' -DefaultValue '')
                 Status=Resolve-PSIStatus -Status ([string] (Get-PSIProperty $Item 'Status' -DefaultValue 'Unknown'))
                 Properties=$Fields.ToArray(); Metadata=$Tags.ToArray(); Sections=$Sections.ToArray()
+                Breadcrumb=$Breadcrumb.ToArray(); Actions=$Actions.ToArray()
             })
         }
         $Report | Add-Member -NotePropertyName Inspector -NotePropertyValue ([pscustomobject]@{ Id=$Id; Title=$Title; Items=$Normalized.ToArray() })

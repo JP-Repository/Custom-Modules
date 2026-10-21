@@ -171,6 +171,17 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); line-height: 1.15; letter-spa
 .psi-section { margin-top: 28px; scroll-margin-top: 20px; }
 .psi-section h2 { margin: 0 0 14px; font-size: 18px; letter-spacing: -.015em; }
 .psi-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
+.psi-sparkline-panel { grid-column: span var(--psi-component-span, 3); min-width: 0; margin: 0; padding: 10px 12px; color: var(--psi-component-status, var(--psi-status-info)); background: var(--psi-surface); border: 1px solid var(--psi-border); border-radius: 9px; }
+.psi-sparkline-panel figcaption { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; color: var(--psi-text); font-size: 11px; }
+.psi-sparkline-panel figcaption span { color: var(--psi-text-secondary); }
+.psi-sparkline-panel figcaption strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.psi-sparkline-visual { display: block; width: 100%; height: 30px; margin-top: 7px; color: var(--psi-component-status, var(--psi-status-info)); }
+.psi-empty-state { grid-column: 1 / -1; display: flex; gap: 10px; align-items: flex-start; padding: 16px; color: var(--psi-text-secondary); background: var(--psi-surface-subtle); border: 1px dashed var(--psi-border); border-radius: 9px; }
+.psi-empty-state > svg { flex: 0 0 24px; color: var(--psi-status-unknown); }
+.psi-empty-state strong { color: var(--psi-text); font-size: 13px; }
+.psi-empty-state p { margin: 3px 0 0; font-size: 12px; }
+.psi-empty-state button { margin-top: 8px; padding: 5px 8px; color: var(--psi-accent); background: var(--psi-surface); border: 1px solid var(--psi-border); border-radius: 6px; font: inherit; font-size: 11px; cursor: pointer; }
+.psi-empty-state button:focus-visible { outline: 2px solid var(--psi-focus); outline-offset: 2px; }
 .psi-text { grid-column: span var(--psi-row-columns); padding: 20px 22px; background: var(--psi-surface); border: 1px solid var(--psi-border); border-radius: 14px; box-shadow: var(--psi-shadow); line-height: 1.65; overflow-wrap: anywhere; }
 .psi-text-small { color: var(--psi-muted); font-size: 13px; }
 .psi-text-normal { font-size: 16px; }

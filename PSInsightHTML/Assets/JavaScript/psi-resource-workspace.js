@@ -29,6 +29,17 @@
     return element;
   }
   function statusClass(value) { return 'psi-status-' + String(value || 'Unknown').toLowerCase(); }
+  function decorateStatus(element, value, className) {
+    var key = String(value || 'Unknown').toLowerCase();
+    var tone = ['healthy', 'ready'].indexOf(key) >= 0 ? 'healthy' :
+      ['warning', 'review'].indexOf(key) >= 0 ? 'warning' :
+      ['critical', 'blocked'].indexOf(key) >= 0 ? 'critical' : 'info';
+    var template = document.querySelector('[data-psi-resource-status-icon="' + tone + '"]');
+    element.className = className + ' ' + statusClass(value);
+    element.replaceChildren();
+    if (template) { element.appendChild(template.content.firstElementChild.cloneNode(true)); }
+    element.appendChild(document.createTextNode(String(value || 'Unknown')));
+  }
   function isMobileExplorer() { return window.matchMedia('(max-width: 900px)').matches; }
   function setExplorerOpen(open) {
     if (isMobileExplorer()) {
@@ -83,13 +94,23 @@
     var icon = header.querySelector('[data-psi-resource-header-icon]');
     var selectedIcon = node.querySelector('.psi-resource-icon .psi-icon-filled') || node.querySelector('.psi-resource-icon .psi-icon-regular');
     icon.replaceChildren(selectedIcon.cloneNode(true));
-    header.querySelector('[data-psi-resource-header-type]').textContent = node.getAttribute('data-psi-resource-type') || 'Resource';
+    var breadcrumb = record && record.Breadcrumb && record.Breadcrumb.length ? record.Breadcrumb.join(' / ') : (node.getAttribute('data-psi-resource-type') || 'Resource');
+    header.querySelector('[data-psi-resource-header-breadcrumb]').textContent = breadcrumb;
     header.querySelector('[data-psi-resource-header-title]').textContent = record && record.Title ? record.Title : node.querySelector('.psi-resource-label').textContent;
     header.querySelector('[data-psi-resource-header-subtitle]').textContent = record && record.Subtitle ? record.Subtitle : '';
     var status = record && record.Status ? record.Status : node.getAttribute('data-psi-resource-status');
     var statusElement = header.querySelector('[data-psi-resource-header-status]');
-    statusElement.textContent = status;
-    statusElement.className = 'psi-resource-header-status ' + statusClass(status);
+    decorateStatus(statusElement, status, 'psi-resource-header-status');
+    var actions = header.querySelector('[data-psi-resource-header-actions]');
+    actions.replaceChildren();
+    (record && record.Actions || []).forEach(function (action) {
+      var button = addText(actions, 'button', action.Label);
+      button.type = 'button';
+      button.addEventListener('click', function () {
+        if (action.ResourceId && byId[action.ResourceId]) { select(byId[action.ResourceId], true); }
+        if (action.TargetView) { openView(action.TargetView); }
+      });
+    });
     var tags = header.querySelector('[data-psi-resource-header-tags]');
     tags.replaceChildren();
     (record && record.Metadata || []).forEach(function (entry) {
@@ -144,8 +165,7 @@
     inspector.querySelector('[data-psi-inspector-subtitle]').textContent = record && record.Subtitle ? record.Subtitle : node.getAttribute('data-psi-resource-type');
     var status = record && record.Status ? record.Status : node.getAttribute('data-psi-resource-status');
     var statusElement = inspector.querySelector('[data-psi-inspector-status]');
-    statusElement.textContent = status;
-    statusElement.className = 'psi-inspector-status ' + statusClass(status);
+    decorateStatus(statusElement, status, 'psi-inspector-status');
     tabs.replaceChildren();
     body.replaceChildren();
     if (!record) { addText(body, 'p', 'No inspector details are available for this resource.', 'psi-inspector-empty'); return; }

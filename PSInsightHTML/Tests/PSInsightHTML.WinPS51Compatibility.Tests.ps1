@@ -58,7 +58,7 @@ Describe 'PSInsightHTML Windows PowerShell 5.1 source compatibility' {
         $Module = Get-Module PSInsightHTML
         $Module | Should -Not -BeNullOrEmpty
         $Module.Version.ToString() | Should -Be '0.10.0'
-        @(Get-Command -Module PSInsightHTML -CommandType Function).Count | Should -Be 48
+        @(Get-Command -Module PSInsightHTML -CommandType Function).Count | Should -Be 50
     }
 
     It 'renders the evidence hint with a browser-decoded right arrow' {

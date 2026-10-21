@@ -97,7 +97,7 @@ Describe 'PSInsightHTML provider integration and report catalog' {
 
     It 'keeps provider implementation helpers private after report generation' {
         $Exported = @(Get-Command -Module PSInsightHTML -CommandType Function | Select-Object -ExpandProperty Name)
-        $Exported.Count | Should -Be 48
+        $Exported.Count | Should -Be 50
         $Exported | Should -Not -Contain 'New-PSIADReplicationSampleData'
         $Exported | Should -Not -Contain 'Get-PSIADGroupPolicyDistribution'
         $Exported | Should -Not -Contain 'Import-PSIADUserInventoryWorkbook'

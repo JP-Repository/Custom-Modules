@@ -17,13 +17,6 @@ $Services = @(
     [pscustomobject]@{ Name='Echo Metrics'; Region='North'; Status='Healthy'; Availability='99.91%'; Owner='Observability' }
     [pscustomobject]@{ Name='Fjord Archive'; Region='West'; Status='Unknown'; Availability=$null; Owner='Storage' }
 )
-$StatusCounts = @(
-    [pscustomobject]@{ Status='Healthy'; Count=3 }
-    [pscustomobject]@{ Status='Warning'; Count=1 }
-    [pscustomobject]@{ Status='Critical'; Count=1 }
-    [pscustomobject]@{ Status='Unknown'; Count=1 }
-)
-
 $Report = New-PSIReport -Title 'Infrastructure Explorer' -Subtitle 'Fictional service operations snapshot' `
     -Layout Application -Navigation FluentExplorer -Density Compact -Theme $Theme
 
@@ -53,41 +46,53 @@ $Nodes = @(
 $Report | Add-PSIResourceExplorer -Id infrastructure -Title 'Resources' -Nodes $Nodes -SelectedId dc01 | Out-Null
 
 $DcSamples = @(
-    @{ Id='dc01'; Name='CABOT-DC01'; Site='HQ'; IPv4='10.10.1.10'; Status='Healthy'; Uptime='42 days'; Roles='AD DS, DNS, GC'; Fsmo='PDC Emulator'; OS='Windows Server 2022' }
-    @{ Id='dc02'; Name='CABOT-DC02'; Site='HQ'; IPv4='10.10.1.11'; Status='Healthy'; Uptime='38 days'; Roles='AD DS, DNS, GC'; Fsmo='RID Master'; OS='Windows Server 2022' }
-    @{ Id='dc03'; Name='CABOT-DC03'; Site='Branch1'; IPv4='10.10.2.10'; Status='Warning'; Uptime='97 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2022' }
-    @{ Id='dc04'; Name='CABOT-DC04'; Site='Branch1'; IPv4='10.10.2.11'; Status='Critical'; Uptime='131 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2019' }
-    @{ Id='dc05'; Name='CABOT-DC05'; Site='Branch2'; IPv4='10.10.3.10'; Status='Healthy'; Uptime='31 days'; Roles='AD DS, DNS, GC'; Fsmo='Infrastructure Master'; OS='Windows Server 2022' }
-    @{ Id='dc06'; Name='CABOT-DC06'; Site='Branch2'; IPv4='10.10.3.11'; Status='Healthy'; Uptime='29 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2022' }
+    @{ Id='dc01'; Name='CABOT-DC01'; Site='HQ'; IPv4='10.10.1.10'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='42 days'; Roles='AD DS, DNS, GC'; Fsmo='PDC Emulator'; OS='Windows Server 2022' }
+    @{ Id='dc02'; Name='CABOT-DC02'; Site='HQ'; IPv4='10.10.1.11'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='38 days'; Roles='AD DS, DNS, GC'; Fsmo='RID Master'; OS='Windows Server 2022' }
+    @{ Id='dc03'; Name='CABOT-DC03'; Site='Branch1'; IPv4='10.10.2.10'; Status='Warning'; Replication='Warning'; DNS='Healthy'; Uptime='97 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2022' }
+    @{ Id='dc04'; Name='CABOT-DC04'; Site='Branch1'; IPv4='10.10.2.11'; Status='Critical'; Replication='Healthy'; DNS='Critical'; Uptime='131 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2019' }
+    @{ Id='dc05'; Name='CABOT-DC05'; Site='Branch2'; IPv4='10.10.3.10'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='31 days'; Roles='AD DS, DNS, GC'; Fsmo='Infrastructure Master'; OS='Windows Server 2022' }
+    @{ Id='dc06'; Name='CABOT-DC06'; Site='Branch2'; IPv4='10.10.3.11'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='29 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2022' }
+)
+$DcChecks = @($DcSamples | ForEach-Object {
+    [pscustomobject]@{ Name=$_.Name; Site=$_.Site; Replication=$_.Replication; DNS=$_.DNS; Status=$_.Status }
+})
+$StatusCounts = @(
+    [pscustomobject]@{ Status='Healthy'; Count=4 }
+    [pscustomobject]@{ Status='Warning'; Count=1 }
+    [pscustomobject]@{ Status='Critical'; Count=1 }
 )
 $InspectorItems = @(
     foreach ($Dc in $DcSamples) {
-        $Attention = if ($Dc.Status -eq 'Critical') { 'Critical synthetic service observation' }
-            elseif ($Dc.Status -eq 'Warning') { 'Warning synthetic replication observation' }
-            else { 'Routine owner record review' }
+        $FindingBlocks = @()
+        $RecommendationBlocks = @()
+        if ($Dc.DNS -eq 'Critical') {
+            $FindingBlocks = @(@{ Title='DNS check requires review'; Text='Synthetic DNS observation for ' + $Dc.Name + '. Reference: dns-' + $Dc.Id; Status='Critical' })
+            $RecommendationBlocks = @(@{ Title='Inspect DNS sample evidence'; Text='Review the fictional DNS check and compare the affected controller with its site peer.' })
+        }
+        elseif ($Dc.Replication -eq 'Warning') {
+            $FindingBlocks = @(@{ Title='Replication check needs attention'; Text='Synthetic replication observation for ' + $Dc.Name + '. Reference: replication-' + $Dc.Id; Status='Warning' })
+            $RecommendationBlocks = @(@{ Title='Inspect replication sample evidence'; Text='Review the fictional replication check and its related site context.' })
+        }
         @{
             Id='inspector-' + $Dc.Id; ResourceId=$Dc.Id
             Title=$Dc.Name + '.root.cabot-corp.com'; Subtitle='Synthetic domain controller'; Status=$Dc.Status
-            Metadata=[ordered]@{ OS=$Dc.OS; Site=$Dc.Site; IPv4=$Dc.IPv4; Uptime=$Dc.Uptime }
+            Breadcrumb=@('Infrastructure','Sites',$Dc.Site)
+            Actions=@(@{ Label='View checks'; TargetView='checks' })
+            Metadata=[ordered]@{ Site=$Dc.Site; Roles=$Dc.Roles }
             Properties=[ordered]@{
-                OS=$Dc.OS; Domain='root.cabot-corp.com'; Site=$Dc.Site; IPv4=$Dc.IPv4
-                Roles=$Dc.Roles; FSMO=$Dc.Fsmo; Uptime=$Dc.Uptime
+                OS=$Dc.OS; IPv4=$Dc.IPv4; FSMO=$Dc.Fsmo; Uptime=$Dc.Uptime
+                Replication=$Dc.Replication; DNS=$Dc.DNS
                 'Functional Level'='Windows Server 2016'; Hardware='Fictional virtual machine'
             }
             Sections=@(
                 @{ Id='Evidence'; Title='Evidence'; Blocks=@(
                     @{ Title='Heartbeat sample'; Text='Fictional monitor reference: heartbeat-' + $Dc.Id; Status=$Dc.Status },
-                    @{ Title='Directory sample'; Text='Fictional directory reference: directory-' + $Dc.Id; Status='Informational' }
+                    @{ Title='Directory sample'; Text='Fictional directory reference: directory-' + $Dc.Id; Status='Informational' },
+                    @{ Title='Replication and DNS sample'; Text='Fictional check references: replication-' + $Dc.Id + ', dns-' + $Dc.Id; Status=$Dc.Status }
                 ) },
-                @{ Id='Findings'; Title='Findings'; Blocks=@(
-                    @{ Title=$Attention; Text='Presentation-only sample finding for ' + $Dc.Name + '.'; Status=$Dc.Status },
-                    @{ Title='Inventory metadata review'; Text='Confirm the fictional owner and site labels during a sample review.'; Status='Informational' }
-                ) },
-                @{ Id='Recommendations'; Title='Recommendations'; Blocks=@(
-                    @{ Title='Review sample observation'; Text='Inspect the supplied fictional evidence reference. No change is executed.' },
-                    @{ Title='Confirm inventory context'; Text='Validate the synthetic site, OS and ownership labels in the source dataset.' }
-                ) },
-                @{ Id='Related'; Title='Related Resources'; Blocks=@(
+                @{ Id='Findings'; Title='Findings'; Blocks=$FindingBlocks },
+                @{ Id='Recommendations'; Title='Recommendations'; Blocks=$RecommendationBlocks },
+                @{ Id='Related'; Title='Related'; Blocks=@(
                     @{ Title='Domain'; Text='root.cabot-corp.com'; ResourceId='domain'; ActionLabel='Open domain' }
                 ) }
             )
@@ -96,21 +101,42 @@ $InspectorItems = @(
 )
 $Report | Add-PSIInspector -Id dc-context -Title 'Context Inspector' -Items $InspectorItems | Out-Null
 
-$Report | Add-PSIView -Id overview -Title Overview -Subtitle 'Fictional portfolio health' -Icon NavigationHome -Initial |
-    Add-PSISection -Title 'Portfolio pulse' | Add-PSIRow |
-    Add-PSIKPI -Title Services -Value 6 -Subtitle 'Sample services' -Status Info -Icon ResourceServer -Span 3 |
-    Add-PSIKPI -Title Healthy -Value 3 -Subtitle 'Operating normally' -Status Healthy -Icon SeveritySuccess -Span 3 |
-    Add-PSIKPI -Title Attention -Value 2 -Subtitle 'Warning or critical' -Status Warning -Icon SeverityWarning -Span 3 |
-    Add-PSIKPI -Title Availability -Value '99.14%' -Subtitle 'Fictional aggregate' -Status Info -Icon NavigationHome -Span 3 | Out-Null
-$Report | Add-PSISection -Title 'Status distribution' | Add-PSIRow |
-    Add-PSIChart -Title 'Services by status' -ChartType Bar -Data $StatusCounts -CategoryProperty Status -ValueProperty Count -ShowLabels $true | Out-Null
+$Report | Add-PSIView -Id overview -Title Summary -Subtitle 'Fictional infrastructure health' -Icon NavigationHome -TabCount 2 -Initial |
+    Add-PSISection -Title 'Health Overview' | Add-PSIRow |
+    Add-PSIKPI -Title 'Overall' -Value 'Critical' -Subtitle 'DNS sample needs review' -Status Critical -Icon SeverityError -Span 2 |
+    Add-PSIKPI -Title 'Controllers' -Value 6 -Subtitle '4 healthy / 3 sites' -Status Info -Icon ResourceServer -Span 2 |
+    Add-PSIKPI -Title 'Replication' -Value '1 warning' -Subtitle 'CABOT-DC03' -Status Warning -Icon SeverityWarning -Span 2 |
+    Add-PSIKPI -Title 'DNS' -Value '1 critical' -Subtitle 'CABOT-DC04' -Status Critical -Icon SeverityError -Span 2 |
+    Add-PSIKPI -Title 'Evidence' -Value '6 / 6' -Subtitle 'Sample DC records present' -Status Info -Icon Document -Span 2 |
+    Add-PSIKPI -Title 'Attention' -Value 2 -Subtitle 'Affected controllers' -Status Warning -Icon SeverityWarning -Span 2 | Out-Null
+$Report | Add-PSISection -Title 'Requires Attention' | Add-PSIRow |
+    Add-PSIAlert -Status Critical -Title 'CABOT-DC04 - DNS' -Message 'Fictional DNS check is critical. Select CABOT-DC04 to inspect its evidence.' |
+    Add-PSIAlert -Status Warning -Title 'CABOT-DC03 - Replication' -Message 'Fictional replication check needs review. Select CABOT-DC03 to inspect its evidence.' | Out-Null
 
-$Report | Add-PSIView -Id services -Title Services -Subtitle 'Searchable fictional inventory' -Icon ResourceServer |
+$Report | Add-PSIView -Id checks -Title Checks -Subtitle 'Synthetic controller checks' -Icon Rules -TabCount 6 |
+    Add-PSISection -Title 'Controller checks' | Add-PSIRow |
+    Add-PSITable -Id controller-checks -Title 'Replication and DNS' -Data $DcChecks -Columns @('Name','Site','Replication','DNS','Status') -PageSize 6 | Out-Null
+$Report | Add-PSISection -Title 'Controller status' | Add-PSIRow |
+    Add-PSIChart -Title 'Controllers by status' -ChartType Bar -Data $StatusCounts -CategoryProperty Status -ValueProperty Count -ShowLabels $true | Out-Null
+$Report | Add-PSISection -Title 'Sample Trends' | Add-PSIRow |
+    Add-PSISparkline -Label CPU -CurrentValue '12%' -Values @(18,20,17,16,14,17,12,12) -Status Healthy -Span 3 |
+    Add-PSISparkline -Label Memory -CurrentValue '58%' -Values @(50,52,54,55,54,57,58,58) -Status Healthy -Span 3 |
+    Add-PSISparkline -Label Disk -CurrentValue '34%' -Values @(29,29,30,31,31,32,33,34) -Status Warning -Span 3 |
+    Add-PSISparkline -Label 'LDAP latency' -CurrentValue '18 ms' -Values @(16,17,15,20,19,18,17,18) -Status Info -Span 3 | Out-Null
+
+$Report | Add-PSIView -Id services -Title Evidence -Subtitle 'Searchable fictional inventory' -Icon Document -TabCount 6 |
     Add-PSISection -Title 'Service inventory' | Add-PSIRow |
-    Add-PSITable -Title 'Service health' -Data $Services -Columns @('Name','Region','Status','Availability','Owner') -PageSize 5 | Out-Null
+    Add-PSITable -Id service-evidence -Title 'Service evidence' -Data $Services -Columns @('Name','Region','Status','Availability','Owner') -PageSize 5 | Out-Null
 
-$Report | Add-PSIView -Id notes -Title Notes -Subtitle 'Sample interpretation only' -Icon Document |
-    Add-PSISection -Title 'About this snapshot' | Add-PSIRow |
+$Report | Add-PSIView -Id topology -Title Topology -Subtitle 'Fictional site distribution' -Icon Relationship -TabCount 3 |
+    Add-PSISection -Title 'Topology Summary' | Add-PSIRow |
+    Add-PSIText -Text 'Three fictional sites contain six sample controllers. HQ: 2, Branch1: 2, Branch2: 2.' -Size Small | Out-Null
+
+$Report | Add-PSIView -Id notes -Title Actions -Subtitle 'Sample follow-up only' -Icon Document -TabCount 2 |
+    Add-PSISection -Title 'Suggested sample review' | Add-PSIRow |
+    Add-PSIRecommendation -Status Critical -Title 'Review CABOT-DC04 DNS evidence' -Description 'The fictional DNS check is critical.' -ActionText 'Open CABOT-DC04 in Resources and inspect its evidence reference.' |
+    Add-PSIRecommendation -Status Warning -Title 'Review CABOT-DC03 replication evidence' -Description 'The fictional replication check is warning.' -ActionText 'Open CABOT-DC03 in Resources and inspect its evidence reference.' | Out-Null
+$Report | Add-PSISection -Title 'About this snapshot' | Add-PSIRow |
     Add-PSIText -Text 'This standalone benchmark contains synthetic services only. No live infrastructure was queried.' | Out-Null
 
 Export-PSIReport -Report $Report -Path $OutputPath | Out-Null

@@ -79,6 +79,7 @@ function Resolve-PSIApplicationNavigation {
             if (-not $GroupMap.Contains($Group)) { $GroupMap[$Group] = [System.Collections.Generic.List[object]]::new() }
             $GroupMap[$Group].Add(@{ Id=$Id; Label=$Title; Target="psi-view-$Id"; Icon=$Icon;
                 Badge=[string] (Get-PSIProperty -InputObject $View -Name 'Badge' -DefaultValue '');
+                Disabled=(Get-PSIProperty -InputObject $View -Name 'Disabled' -DefaultValue $false) -eq $true;
                 Selected=(Get-PSIProperty -InputObject $View.State -Name 'Initial' -DefaultValue $false) -eq $true })
         }
         if ($ExpectedSections -ne $Sections.Count) { throw 'Every application section must belong to a registered view.' }

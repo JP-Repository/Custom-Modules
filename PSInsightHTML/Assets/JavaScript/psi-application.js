@@ -17,6 +17,7 @@
   var viewSubtitle = shell.querySelector('[data-psi-app-view-subtitle]');
   var contextTitle = shell.querySelector('[data-psi-app-context-title]');
   var viewCommands = Array.prototype.slice.call(shell.querySelectorAll('[data-psi-app-command-target]'));
+  var workspaceTabs = Array.prototype.slice.call(shell.querySelectorAll('[data-psi-workspace-tab]'));
   function activeSearch() {
     var scope = multiView ? shell.querySelector('[data-psi-app-view]:not([hidden])') : shell;
     return scope ? scope.querySelector('[data-psi-explorer-search], [data-psi-search]') : null;
@@ -69,6 +70,11 @@
     if (!active) { return false; }
     views.forEach(function (view) { view.hidden = view !== active; });
     selectLink(id);
+    workspaceTabs.forEach(function (tab) {
+      var current = tab.getAttribute('data-psi-workspace-tab') === id;
+      tab.setAttribute('aria-selected', String(current));
+      tab.tabIndex = current ? 0 : -1;
+    });
     if (viewTitle) { viewTitle.textContent = active.getAttribute('data-psi-view-label') || ''; }
     if (viewSubtitle) { viewSubtitle.textContent = active.getAttribute('data-psi-view-description') || ''; }
     if (contextTitle) { contextTitle.textContent = active.getAttribute('data-psi-view-label') || ''; }
@@ -97,6 +103,24 @@
   });
   if (multiView) {
     updateSearchAction();
+    workspaceTabs.forEach(function (tab) {
+      tab.addEventListener('click', function () { if (!tab.disabled) { activateView(tab.getAttribute('data-psi-workspace-tab'), false); } });
+      tab.addEventListener('keydown', function (event) {
+        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].indexOf(event.key) < 0) { return; }
+        var enabled = workspaceTabs.filter(function (item) { return !item.disabled; });
+        var index = enabled.indexOf(tab), next = index;
+        if (event.key === 'ArrowLeft') { next = (index + enabled.length - 1) % enabled.length; }
+        if (event.key === 'ArrowRight') { next = (index + 1) % enabled.length; }
+        if (event.key === 'Home') { next = 0; }
+        if (event.key === 'End') { next = enabled.length - 1; }
+        enabled[next].focus();
+        activateView(enabled[next].getAttribute('data-psi-workspace-tab'), false);
+        event.preventDefault();
+      });
+    });
+    Array.prototype.forEach.call(shell.querySelectorAll('[data-psi-empty-target]'), function (button) {
+      button.addEventListener('click', function () { activateView(button.getAttribute('data-psi-empty-target'), true); });
+    });
     viewCommands.forEach(function (button) {
       button.addEventListener('click', function () { activateView(button.getAttribute('data-psi-app-command-target'), true); });
     });

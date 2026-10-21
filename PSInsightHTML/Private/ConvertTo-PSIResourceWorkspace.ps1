@@ -41,7 +41,10 @@ function ConvertTo-PSIResourceWorkspace {
         $Filled = (Get-PSIIcon -Name $Node.Icon -Variant Filled -Size 18 -Strict).Replace('class="psi-icon psi-icon-fluent"', 'class="psi-icon psi-icon-fluent psi-icon-filled"')
         $Chevron = if ($HasChildren) { '<span class="psi-resource-chevron" aria-hidden="true">' + (Get-PSIIcon -Name AppChevron -Size 14 -Strict) + '</span>' } else { '<span class="psi-resource-chevron" aria-hidden="true"></span>' }
         $Count = if ($null -ne $Node.Count) { '<span class="psi-resource-count">' + [int]$Node.Count + '</span>' } else { '' }
-        [void]$Tree.AppendLine("<button type=`"button`" class=`"psi-resource-node`" role=`"treeitem`" data-psi-resource-node=`"$NodeId`" data-psi-resource-parent=`"$ParentId`" data-psi-resource-target=`"$Target`" data-psi-resource-type=`"$Type`" data-psi-resource-status=`"$Status`" style=`"--psi-resource-depth:$($Node.Depth)`" aria-level=`"$($Node.Depth+1)`" aria-selected=`"$Selected`"$Expanded$Disabled tabindex=`"-1`">$Chevron<span class=`"psi-resource-icon`">$Regular$Filled</span><span class=`"psi-resource-label`">$Label</span>$Count<span class=`"psi-resource-status psi-status-$($Node.Status.ToLowerInvariant())`" aria-label=`"Status: $Status`"></span></button>")
+        $StatusPresentation = Get-PSIStatusPresentation -Status $Node.Status
+        $StatusIconName = if ($null -ne $StatusPresentation) { $StatusPresentation.Icon } else { 'SeverityInfo' }
+        $StatusIcon = Get-PSIIcon -Name $StatusIconName -Size 13 -Strict
+        [void]$Tree.AppendLine("<button type=`"button`" class=`"psi-resource-node`" role=`"treeitem`" data-psi-resource-node=`"$NodeId`" data-psi-resource-parent=`"$ParentId`" data-psi-resource-target=`"$Target`" data-psi-resource-type=`"$Type`" data-psi-resource-status=`"$Status`" style=`"--psi-resource-depth:$($Node.Depth)`" aria-level=`"$($Node.Depth+1)`" aria-selected=`"$Selected`"$Expanded$Disabled tabindex=`"-1`">$Chevron<span class=`"psi-resource-icon`">$Regular$Filled</span><span class=`"psi-resource-label`">$Label</span>$Count<span class=`"psi-resource-status psi-status-$($Node.Status.ToLowerInvariant())`" title=`"Status: $Status`" aria-label=`"Status: $Status`">$StatusIcon</span></button>")
         if ($HasChildren) {
             $ChildNodes = @($Children[$NodeId])
             for ($Index=$ChildNodes.Count-1; $Index -ge 0; $Index--) { $Stack.Push($ChildNodes[$Index]) }
@@ -59,7 +62,11 @@ $($Tree.ToString())      </div>
       <p class="psi-resource-empty" data-psi-resource-empty hidden>No matching resources.</p>
     </aside>
 "@
-    $Header = '<div class="psi-resource-header" id="psi-resource-header" data-psi-resource-header aria-live="polite"><span class="psi-resource-header-icon" data-psi-resource-header-icon></span><div class="psi-resource-header-copy"><p data-psi-resource-header-type></p><h2 data-psi-resource-header-title></h2><span data-psi-resource-header-subtitle></span><div class="psi-resource-header-tags" data-psi-resource-header-tags></div></div><span class="psi-resource-header-status" data-psi-resource-header-status></span></div>'
+    $HeaderIcons = '<template data-psi-resource-status-icon="healthy">' + (Get-PSIIcon -Name SeveritySuccess -Size 13 -Strict) + '</template>' +
+        '<template data-psi-resource-status-icon="warning">' + (Get-PSIIcon -Name SeverityWarning -Size 13 -Strict) + '</template>' +
+        '<template data-psi-resource-status-icon="critical">' + (Get-PSIIcon -Name SeverityError -Size 13 -Strict) + '</template>' +
+        '<template data-psi-resource-status-icon="info">' + (Get-PSIIcon -Name SeverityInfo -Size 13 -Strict) + '</template>'
+    $Header = $HeaderIcons + '<div class="psi-resource-header" id="psi-resource-header" data-psi-resource-header aria-live="polite"><span class="psi-resource-header-icon" data-psi-resource-header-icon></span><div class="psi-resource-header-copy"><p data-psi-resource-header-breadcrumb></p><h2 data-psi-resource-header-title></h2><span data-psi-resource-header-subtitle></span><div class="psi-resource-header-tags" data-psi-resource-header-tags></div></div><div class="psi-resource-header-side"><span class="psi-resource-header-status" data-psi-resource-header-status></span><div class="psi-resource-header-actions" data-psi-resource-header-actions></div></div></div>'
     $InspectorMarkup = ''
     $Data = ''
     if ($null -ne $Inspector) {

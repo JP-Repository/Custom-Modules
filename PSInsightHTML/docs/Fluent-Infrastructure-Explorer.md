@@ -37,4 +37,22 @@ Desktop uses the global rail, 270 px explorer, remaining workspace, and 340 px i
 
 The synthetic benchmark includes a fictional domain and six fictional domain controllers. It exercises Healthy, Warning, and Critical selection states without collecting Active Directory data.
 
-Compact component overhaul, Sparkline API, evidence-contract correction, lazy rendering, and AD Health migration remain future milestones.
+## Compact component system (0.11C)
+
+The opt-in `Application` + `FluentExplorer` + `Compact` combination now uses 88 px KPI cards, restrained status color, 34 px table rows, contained table scrolling, 12-14 px panel padding, and a 38 px workspace tab strip. Standard Report layouts retain their existing table and KPI presentation. The shared Light/Dark/Auto theme tokens drive all component colors; the benchmark remains standalone.
+
+The existing Resource Explorer header now displays the selected resource icon, title, subtitle, status badge, metadata tags, and optional breadcrumb/action data from its corresponding `Add-PSIInspector -Items` record. An item may include `Breadcrumb = @('Infrastructure','Site')` and `Actions = @(@{ Label='View evidence'; TargetView='evidence' })`. Actions may instead name a known `ResourceId`. The header continues to update from the single selected-resource lookup; it does not duplicate the resource model.
+
+`Add-PSIView` accepts optional `-TabCount` (nonnegative) and `-Disabled`. Fluent compact reports render the registered views as lightweight tabs with a selected underline. The tabs call the existing application view activation path, so sidebar navigation, search results, filter actions, and tab clicks share one active view. Arrow keys and Home/End move between enabled tabs. Existing reports without Fluent compact navigation do not gain another tab bar.
+
+`Add-PSISparkline` accepts 2-120 finite numeric `-Values`, optional `-Label`, `-CurrentValue`, canonical `-Status`, `-Minimum`, `-Maximum`, and `-Span`. It emits one small inline SVG with encoded labels and no chart library. Place two to four sparklines in a normal row for a compact metric panel:
+
+```powershell
+$Report | Add-PSISection -Title 'Key Metrics' | Add-PSIRow |
+    Add-PSISparkline -Label CPU -CurrentValue '12%' -Values @(18,17,14,12) -Status Healthy -Span 3 |
+    Add-PSISparkline -Label Memory -CurrentValue '58%' -Values @(50,54,57,58) -Status Healthy -Span 3 | Out-Null
+```
+
+`Add-PSIEmptyState` accepts `-Title`, `-Explanation`, optional `-Icon`, and optional `-ActionLabel` with `-TargetView`. It uses encoded text and an embedded icon. Compact tables also show an explanatory no-results state. Status cells in compact Fluent tables recognize Healthy, Ready, Warning, Review, Critical, Blocked, Info, Unknown, NotTested, NotSupported, and NA as presentation badges with an icon and label. This visual mapping does not alter the existing canonical status or assessment/scoring rules. Standard Report tables retain their prior status rendering.
+
+The synthetic benchmark now includes six KPIs, five workspace tabs, four sparkline metrics, a dense service table, a health chart, a topology summary, and an empty recommendation state alongside the Resource Explorer and Context Inspector. It contains no collected infrastructure facts. Evidence-contract correction, lazy rendering, and AD Health migration remain outside this milestone.

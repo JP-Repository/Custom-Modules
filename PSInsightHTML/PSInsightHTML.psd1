@@ -36,6 +36,8 @@
         'Add-PSIAssessmentOverview'
         'Add-PSIRow'
         'Add-PSIKPI'
+        'Add-PSISparkline'
+        'Add-PSIEmptyState'
         'Add-PSIKeyValue'
         'Add-PSIInsight'
         'Add-PSIStatus'

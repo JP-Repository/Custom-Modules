@@ -66,8 +66,10 @@ Describe 'Fluent Resource Explorer and Context Inspector' {
         $script:Registry.dc01.Sections.Id | Should -Contain 'Evidence'
         $script:Registry.dc01.Sections.Id | Should -Contain 'Findings'
         $script:Registry.dc01.Sections.Id | Should -Contain 'Recommendations'
-        @($script:Registry.dc01.Sections | Where-Object Id -eq 'Findings')[0].Blocks.Count | Should -BeGreaterOrEqual 2
-        @($script:Registry.dc01.Sections | Where-Object Id -eq 'Recommendations')[0].Blocks.Count | Should -BeGreaterOrEqual 2
+        @($script:Registry.dc01.Sections | Where-Object Id -eq 'Findings')[0].Blocks.Count | Should -Be 0
+        @($script:Registry.dc01.Sections | Where-Object Id -eq 'Recommendations')[0].Blocks.Count | Should -Be 0
+        @($script:Registry.dc03.Sections | Where-Object Id -eq 'Findings')[0].Blocks.Count | Should -Be 1
+        @($script:Registry.dc04.Sections | Where-Object Id -eq 'Findings')[0].Blocks.Count | Should -Be 1
         $script:Html | Should -Match 'role="tablist" aria-label="Resource details"'
         $script:Html | Should -Match 'aria-controls.*psi-inspector-panel'
     }

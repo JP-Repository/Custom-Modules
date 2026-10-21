@@ -40,20 +40,26 @@ Describe 'Fluent Explorer application foundation' {
         $script:Markup | Should -Match 'data-psi-app-view-target="overview"[^>]*aria-current="page"'
         $script:Markup | Should -Match 'psi-icon-regular'
         $script:Markup | Should -Match 'psi-icon-filled'
-        $script:Markup | Should -Match 'title="Overview"'
+        $script:Markup | Should -Match 'title="Summary"'
     }
     It 'keeps Light, Dark and Auto theme controls and palettes' {
         foreach ($Theme in @('Light','Dark','Auto')) { $script:Markup | Should -Match ('data-psi-theme="' + $Theme + '"') }
         $script:Markup | Should -Match 'data-theme="Auto"'
-        $script:Markup | Should -Match '--psi-page: #f4f7fb'
+        $script:Markup | Should -Match '--psi-page: #e9eef4'
+        $script:Markup | Should -Match '--psi-app-rail: #172b40'
         $script:Markup | Should -Match '--psi-page: #101923'
         $script:Markup | Should -Match 'prefers-color-scheme: dark'
     }
     It 'renders generic KPI, chart, table and text components' {
-        $script:Markup | Should -Match 'Portfolio pulse'
-        $script:Markup | Should -Match 'Services by status'
-        $script:Markup | Should -Match 'Service health'
+        $script:Markup | Should -Match 'Health Overview'
+        $script:Markup | Should -Match 'Controllers by status'
+        $script:Markup | Should -Match 'Replication and DNS'
+        $script:Markup | Should -Match 'Service evidence'
         $script:Markup | Should -Match 'No live infrastructure was queried'
+    }
+    It 'renders status icons with accessible names in the Explorer' {
+        $script:Markup | Should -Match 'class="psi-resource-status psi-status-critical" title="Status: Critical" aria-label="Status: Critical"><svg'
+        $script:Markup | Should -Match 'class="psi-resource-status psi-status-warning" title="Status: Warning" aria-label="Status: Warning"><svg'
     }
     It 'is standalone and has no duplicate HTML IDs' {
         $script:Markup | Should -Not -Match '<script\s+[^>]*src\s*=|<link\s+[^>]*href\s*=|<img\s+[^>]*src\s*=|\bfetch\s*\('

@@ -29,6 +29,7 @@ function ConvertTo-PSIHtml {
     if ($Layout -notin @('Report', 'Application')) { throw "Unknown report layout '$Layout'." }
     $Navigation = [string] (Get-PSIProperty -InputObject $Report -Name 'Navigation' -DefaultValue 'Sidebar')
     $Density = [string] (Get-PSIProperty -InputObject $Report -Name 'Density' -DefaultValue 'Comfortable')
+    $IsCompactFluent = $Layout -eq 'Application' -and $Navigation -eq 'FluentExplorer' -and $Density -eq 'Compact'
     if ($Navigation -notin @('Sidebar', 'FluentExplorer') -or $Density -notin @('Comfortable', 'Compact')) {
         throw 'Unknown Application navigation or density option.'
     }
@@ -121,7 +122,8 @@ function ConvertTo-PSIHtml {
                 $SafeViewTitle = ConvertTo-PSIHtmlEncoded -Value $View.Title
                 $SafeViewSubtitle = ConvertTo-PSIHtmlEncoded -Value $View.Subtitle
                 $Hidden = if ($CurrentViewId -cne $InitialViewId) { ' hidden' } else { '' }
-                [void] $SectionMarkup.AppendLine("      <section class=`"psi-app-view`" id=`"psi-view-$CurrentViewId`" data-psi-app-view=`"$CurrentViewId`" data-psi-view-label=`"$SafeViewTitle`" data-psi-view-description=`"$SafeViewSubtitle`" aria-label=`"$SafeViewTitle workspace`" tabindex=`"-1`"$Hidden>")
+                $WorkspaceTabRole = if ($Layout -eq 'Application' -and (Get-PSIProperty $Report 'Navigation') -eq 'FluentExplorer' -and (Get-PSIProperty $Report 'Density') -eq 'Compact') { " role=`"tabpanel`" aria-labelledby=`"psi-workspace-tab-$CurrentViewId`"" } else { '' }
+                [void] $SectionMarkup.AppendLine("      <section class=`"psi-app-view`" id=`"psi-view-$CurrentViewId`" data-psi-app-view=`"$CurrentViewId`" data-psi-view-label=`"$SafeViewTitle`" data-psi-view-description=`"$SafeViewSubtitle`" aria-label=`"$SafeViewTitle workspace`" tabindex=`"-1`"$WorkspaceTabRole$Hidden>")
                 $OpenViewId = $CurrentViewId
             }
         }
@@ -340,6 +342,48 @@ function ConvertTo-PSIHtml {
                         else {
                             [void] $SectionMarkup.AppendLine('          </article>')
                         }
+                    }
+                    'Sparkline' {
+                        $Series = [double[]] (Get-PSIProperty $Properties 'Values')
+                        if ($Series.Count -lt 2) { throw 'Sparkline requires at least two points.' }
+                        $Lower = [double] ($Series | Measure-Object -Minimum).Minimum
+                        $Upper = [double] ($Series | Measure-Object -Maximum).Maximum
+                        $RequestedMinimum = Get-PSIProperty $Properties 'Minimum'
+                        $RequestedMaximum = Get-PSIProperty $Properties 'Maximum'
+                        if ($null -ne $RequestedMinimum) { $Lower = [double]$RequestedMinimum }
+                        if ($null -ne $RequestedMaximum) { $Upper = [double]$RequestedMaximum }
+                        if ($Upper -le $Lower) { $Upper = $Lower + 1 }
+                        $PointText = [System.Collections.Generic.List[string]]::new()
+                        for ($PointIndex = 0; $PointIndex -lt $Series.Count; $PointIndex++) {
+                            $X = (100.0 * $PointIndex / ($Series.Count - 1)).ToString('0.##', [System.Globalization.CultureInfo]::InvariantCulture)
+                            $Clamped = [math]::Max($Lower, [math]::Min($Upper, $Series[$PointIndex]))
+                            $Y = (30.0 - (26.0 * ($Clamped - $Lower) / ($Upper - $Lower))).ToString('0.##', [System.Globalization.CultureInfo]::InvariantCulture)
+                            $PointText.Add("$X,$Y")
+                        }
+                        $SparkLabel = ConvertTo-PSIHtmlEncoded -Value (Get-PSIProperty $Properties 'Label')
+                        $Current = Get-PSIProperty $Properties 'CurrentValue'
+                        if ($null -eq $Current) { $Current = $Series[$Series.Count - 1] }
+                        $SparkCurrent = ConvertTo-PSIHtmlEncoded -Value $Current
+                        $SparkStatus = Get-PSIStatusPresentation -Status ([string] (Get-PSIProperty $Properties 'Status'))
+                        $SparkSpan = [int] (Get-PSIProperty $Properties 'Span')
+                        $SparkRange = 'Range: ' + (ConvertTo-PSIHtmlEncoded -Value $Lower) + ' to ' + (ConvertTo-PSIHtmlEncoded -Value $Upper)
+                        [void] $SectionMarkup.AppendLine("          <figure class=`"psi-sparkline-panel psi-status-$($SparkStatus.Class)`" style=`"--psi-component-span: $SparkSpan`"><figcaption><span>$SparkLabel</span><strong>$SparkCurrent</strong></figcaption><svg class=`"psi-sparkline-visual`" viewBox=`"0 0 100 34`" preserveAspectRatio=`"none`" role=`"img`" aria-label=`"$SparkLabel trend. $SparkRange`"><polyline points=`"$($PointText -join ' ')`" fill=`"none`" stroke=`"currentColor`" stroke-width=`"2`" vector-effect=`"non-scaling-stroke`" stroke-linecap=`"round`" stroke-linejoin=`"round`"/></svg></figure>")
+                    }
+                    'EmptyState' {
+                        $EmptyTitle = ConvertTo-PSIHtmlEncoded -Value (Get-PSIProperty $Properties 'Title')
+                        $Explanation = ConvertTo-PSIHtmlEncoded -Value (Get-PSIProperty $Properties 'Explanation')
+                        $EmptyIcon = Get-PSIIcon -Name ([string] (Get-PSIProperty $Properties 'Icon')) -Size 24 -Strict
+                        $ActionLabel = [string] (Get-PSIProperty $Properties 'ActionLabel')
+                        $TargetView = [string] (Get-PSIProperty $Properties 'TargetView')
+                        $EmptyAction = ''
+                        if ($ActionLabel) {
+                            if ($Layout -ne 'Application' -or @($Report.Views | Where-Object { $_.Id -ceq $TargetView }).Count -eq 0) {
+                                throw "Empty-state target view '$TargetView' is unavailable."
+                            }
+                            $SafeAction = ConvertTo-PSIHtmlEncoded -Value $ActionLabel
+                            $EmptyAction = "<button type=`"button`" data-psi-empty-target=`"$TargetView`">$SafeAction</button>"
+                        }
+                        [void] $SectionMarkup.AppendLine("          <div class=`"psi-empty-state`">$EmptyIcon<div><strong>$EmptyTitle</strong><p>$Explanation</p>$EmptyAction</div></div>")
                     }
                     'Insight' {
                         $HasInsightComponents = $true
@@ -658,19 +702,24 @@ function ConvertTo-PSIHtml {
                                     $SafeCellText = ConvertTo-PSIHtmlEncoded -Value $CellText
                                     $CellType = [System.Type]::GetTypeCode($CellValue.GetType())
                                     $NumericClass = if ($CellType -in @([System.TypeCode]::Byte, [System.TypeCode]::SByte, [System.TypeCode]::Int16, [System.TypeCode]::UInt16, [System.TypeCode]::Int32, [System.TypeCode]::UInt32, [System.TypeCode]::Int64, [System.TypeCode]::UInt64, [System.TypeCode]::Single, [System.TypeCode]::Double, [System.TypeCode]::Decimal)) { 'psi-numeric-cell ' } else { '' }
-                                    [void] $SectionMarkup.AppendLine("                    <td class=`"$NumericClass$ExplicitCellClass`">$SafeCellText</td>")
+                                    $CellTitle = if ($IsCompactFluent) { " title=`"$SafeCellText`"" } else { '' }
+                                    [void] $SectionMarkup.AppendLine("                    <td class=`"$NumericClass$ExplicitCellClass`"$CellTitle>$SafeCellText</td>")
                                     continue
                                 }
 
-                                $CellStatus = Resolve-PSIStatus -Status $CellText -AllowInvalid
+                                $CellStatus = if ($IsCompactFluent) { Get-PSIStatusPresentation -Status $CellText } else { Resolve-PSIStatus -Status $CellText -AllowInvalid }
 
                                 if ($null -ne $CellStatus) {
-                                    $CellStatusClass = $CellStatus.ToLowerInvariant()
-                                    if ($CellStatus -eq 'NotChecked') {
-                                        $CellStatusClass = 'not-checked'
+                                    if ($IsCompactFluent) {
+                                        $CellText = ConvertTo-PSIHtmlEncoded -Value $CellStatus.Label
+                                        $BadgeIcon = Get-PSIIcon -Name $CellStatus.Icon -Size 12 -Strict
+                                        [void] $SectionMarkup.AppendLine("                    <td><span class=`"psi-status-badge psi-status-$($CellStatus.Class)`">$BadgeIcon$CellText</span></td>")
                                     }
-                                    $CellText = ConvertTo-PSIHtmlEncoded -Value $CellStatus
-                                    [void] $SectionMarkup.AppendLine("                    <td><span class=`"psi-status-badge psi-status-$CellStatusClass`">$CellText</span></td>")
+                                    else {
+                                        $CellStatusClass = if ($CellStatus -eq 'NotChecked') { 'not-checked' } else { $CellStatus.ToLowerInvariant() }
+                                        $CellText = ConvertTo-PSIHtmlEncoded -Value $CellStatus
+                                        [void] $SectionMarkup.AppendLine("                    <td><span class=`"psi-status-badge psi-status-$CellStatusClass`">$CellText</span></td>")
+                                    }
                                 }
                                 else {
                                     $CellText = ConvertTo-PSIHtmlEncoded -Value $CellText
@@ -684,14 +733,21 @@ function ConvertTo-PSIHtml {
                                         [System.TypeCode]::Decimal
                                     )
                                     $CellClass = if ($CellType -in $NumericTypes) { ' class="psi-numeric-cell"' } else { '' }
-                                    [void] $SectionMarkup.AppendLine("                    <td$CellClass>$CellText</td>")
+                                    $CellTitle = if ($IsCompactFluent) { " title=`"$CellText`"" } else { '' }
+                                    [void] $SectionMarkup.AppendLine("                    <td$CellClass$CellTitle>$CellText</td>")
                                 }
                             }
                             [void] $SectionMarkup.AppendLine('                  </tr>')
                         }
 
                         $ColSpan = [math]::Max(1, $TableColumns.Count)
-                        [void] $SectionMarkup.AppendLine("                  <tr class=`"psi-table-empty`" data-psi-empty$EmptyRowHidden><td colspan=`"$ColSpan`">$EmptyMessage</td></tr>")
+                        if ($IsCompactFluent) {
+                            $TableEmptyIcon = Get-PSIIcon -Name NavigationSearch -Size 18 -Strict
+                            [void] $SectionMarkup.AppendLine("                  <tr class=`"psi-table-empty`" data-psi-empty$EmptyRowHidden><td colspan=`"$ColSpan`"><span class=`"psi-table-empty-content`">$TableEmptyIcon<strong>No results</strong><span>$EmptyMessage</span></span></td></tr>")
+                        }
+                        else {
+                            [void] $SectionMarkup.AppendLine("                  <tr class=`"psi-table-empty`" data-psi-empty$EmptyRowHidden><td colspan=`"$ColSpan`">$EmptyMessage</td></tr>")
+                        }
                         [void] $SectionMarkup.AppendLine('                </tbody>')
                         [void] $SectionMarkup.AppendLine('              </table>')
                         [void] $SectionMarkup.AppendLine('            </div>')
