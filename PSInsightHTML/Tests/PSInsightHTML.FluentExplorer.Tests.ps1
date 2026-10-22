@@ -61,6 +61,35 @@ Describe 'Fluent Explorer application foundation' {
         $script:Markup | Should -Match 'class="psi-resource-status psi-status-critical" title="Status: Critical" aria-label="Status: Critical"><svg'
         $script:Markup | Should -Match 'class="psi-resource-status psi-status-warning" title="Status: Warning" aria-label="Status: Warning"><svg'
     }
+    It 'registers an actual topology view with embedded graph assets' {
+        $script:Markup | Should -Match 'data-psi-workspace-tab="topology"[^>]*aria-controls="psi-view-topology"'
+        $TopologyView = [regex]::Match($script:Markup, '(?s)<section class="psi-app-view" id="psi-view-topology".*?</section>').Value
+        $TopologyView | Should -Match 'data-psi-rel-mode="Topology"'
+        $TopologyView | Should -Match 'data-psi-rel-svg'
+        $script:Markup | Should -Match 'var layoutEdges = containment.length \? containment : visibleEdges'
+        $script:Markup | Should -Match '\.psi-rel-viewport'
+        $script:Markup | Should -Match 'html\[data-psi-navigation="FluentExplorer"\] \.psi-rel-topology \.psi-rel-viewport \{ display: block; \}'
+    }
+    It 'uses stable IDs and explicit, distinct containment and replication links' {
+        $Match = [regex]::Match($script:Markup, '(?s)<script type="application/json" data-psi-rel-data>(.*?)</script>')
+        $Match.Success | Should -BeTrue
+        $Topology = $Match.Groups[1].Value | ConvertFrom-Json
+        $Topology.Nodes.Count | Should -Be 11
+        $Topology.Edges.Count | Should -Be 14
+        foreach ($Id in @('forest','domain','hq','branch1','branch2','dc01','dc02','dc03','dc04','dc05','dc06')) {
+            @($Topology.Nodes | Where-Object Id -eq $Id).Count | Should -Be 1
+        }
+        @($Topology.Edges | Where-Object Category -eq 'Containment').Count | Should -Be 10
+        @($Topology.Edges | Where-Object Category -eq 'Replication').Count | Should -Be 4
+        @($Topology.Edges | Where-Object Id -eq 'rep-dc01-dc03')[0].Status | Should -Be 'Warning'
+        @($Topology.Nodes | Where-Object Id -eq 'dc01')[0].ResourceId | Should -Be 'dc01'
+        $script:Markup | Should -Match 'data-psi-rel-edge-category'
+    }
+    It 'connects graph selection to the existing Resource Workspace without leaving Topology' {
+        $script:Markup | Should -Match "resourceId: node.ResourceId \|\| ''"
+        $script:Markup | Should -Match "select\(byId\[resourceId\], false, false\)"
+        $script:Markup | Should -Match 'if \(view && openTarget !== false\) \{ openView\(view\); \}'
+    }
     It 'is standalone and has no duplicate HTML IDs' {
         $script:Markup | Should -Not -Match '<script\s+[^>]*src\s*=|<link\s+[^>]*href\s*=|<img\s+[^>]*src\s*=|\bfetch\s*\('
         $DocumentMarkup = [regex]::Replace($script:Markup, '(?is)<script\b[^>]*>.*?</script>', '')

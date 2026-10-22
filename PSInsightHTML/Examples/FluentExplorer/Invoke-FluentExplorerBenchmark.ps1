@@ -17,21 +17,22 @@ $Services = @(
     [pscustomobject]@{ Name='Echo Metrics'; Region='North'; Status='Healthy'; Availability='99.91%'; Owner='Observability' }
     [pscustomobject]@{ Name='Fjord Archive'; Region='West'; Status='Unknown'; Availability=$null; Owner='Storage' }
 )
-$Report = New-PSIReport -Title 'Infrastructure Explorer' -Subtitle 'Fictional service operations snapshot' `
+$Report = New-PSIReport -Title 'Infrastructure Explorer' -Subtitle 'Fictional controller and service snapshot' `
     -Layout Application -Navigation FluentExplorer -Density Compact -Theme $Theme
 
 $Nodes = @(
-    @{ Id='domain'; Label='root.cabot-corp.com'; Type='Domain'; Icon='ResourceServer'; Status='Healthy'; Count=6; Target='overview' }
-    @{ Id='sites'; Label='Sites'; Type='Category'; ParentId='domain'; Icon='Relationship'; Status='Healthy'; Count=3 }
+    @{ Id='forest'; Label='root.example.com'; Type='Forest'; Icon='Relationship'; Status='Unknown'; Count=1; Target='topology' }
+    @{ Id='domain'; Label='root.example.com'; Type='Domain'; ParentId='forest'; Icon='Relationship'; Status='Unknown'; Count=6; Target='topology' }
+    @{ Id='sites'; Label='Sites'; Type='Category'; ParentId='domain'; Icon='Relationship'; Status='Unknown'; Count=3 }
     @{ Id='hq'; Label='HQ'; Type='Site'; ParentId='sites'; Icon='Relationship'; Status='Healthy'; Count=2 }
-    @{ Id='dc01'; Label='CABOT-DC01'; Type='Domain Controller'; ParentId='hq'; Icon='ResourceServer'; Status='Healthy'; Target='overview' }
-    @{ Id='dc02'; Label='CABOT-DC02'; Type='Domain Controller'; ParentId='hq'; Icon='ResourceServer'; Status='Healthy'; Target='overview' }
-    @{ Id='branch1'; Label='Branch1'; Type='Site'; ParentId='sites'; Icon='Relationship'; Status='Warning'; Count=2 }
-    @{ Id='dc03'; Label='CABOT-DC03'; Type='Domain Controller'; ParentId='branch1'; Icon='ResourceServer'; Status='Warning'; Target='overview' }
-    @{ Id='dc04'; Label='CABOT-DC04'; Type='Domain Controller'; ParentId='branch1'; Icon='ResourceServer'; Status='Critical'; Target='overview' }
+    @{ Id='dc01'; Label='DC01'; Type='Domain Controller'; ParentId='hq'; Icon='ResourceServer'; Status='Healthy'; Target='overview' }
+    @{ Id='dc02'; Label='DC02'; Type='Domain Controller'; ParentId='hq'; Icon='ResourceServer'; Status='Healthy'; Target='overview' }
+    @{ Id='branch1'; Label='Branch1'; Type='Site'; ParentId='sites'; Icon='Relationship'; Status='Unknown'; Count=2 }
+    @{ Id='dc03'; Label='DC03'; Type='Domain Controller'; ParentId='branch1'; Icon='ResourceServer'; Status='Warning'; Target='overview' }
+    @{ Id='dc04'; Label='DC04'; Type='Domain Controller'; ParentId='branch1'; Icon='ResourceServer'; Status='Critical'; Target='overview' }
     @{ Id='branch2'; Label='Branch2'; Type='Site'; ParentId='sites'; Icon='Relationship'; Status='Healthy'; Count=2 }
-    @{ Id='dc05'; Label='CABOT-DC05'; Type='Domain Controller'; ParentId='branch2'; Icon='ResourceServer'; Status='Healthy'; Target='overview' }
-    @{ Id='dc06'; Label='CABOT-DC06'; Type='Domain Controller'; ParentId='branch2'; Icon='ResourceServer'; Status='Healthy'; Target='overview' }
+    @{ Id='dc05'; Label='DC05'; Type='Domain Controller'; ParentId='branch2'; Icon='ResourceServer'; Status='Healthy'; Target='overview' }
+    @{ Id='dc06'; Label='DC06'; Type='Domain Controller'; ParentId='branch2'; Icon='ResourceServer'; Status='Healthy'; Target='overview' }
     @{ Id='ous'; Label='OUs'; Type='Category'; ParentId='domain'; Icon='Document'; Status='Unknown' }
     @{ Id='groups'; Label='Groups'; Type='Category'; ParentId='domain'; Icon='ResourceServer'; Status='Unknown' }
     @{ Id='users'; Label='Users'; Type='Category'; ParentId='domain'; Icon='ResourceServer'; Status='Unknown' }
@@ -46,13 +47,56 @@ $Nodes = @(
 $Report | Add-PSIResourceExplorer -Id infrastructure -Title 'Resources' -Nodes $Nodes -SelectedId dc01 | Out-Null
 
 $DcSamples = @(
-    @{ Id='dc01'; Name='CABOT-DC01'; Site='HQ'; IPv4='10.10.1.10'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='42 days'; Roles='AD DS, DNS, GC'; Fsmo='PDC Emulator'; OS='Windows Server 2022' }
-    @{ Id='dc02'; Name='CABOT-DC02'; Site='HQ'; IPv4='10.10.1.11'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='38 days'; Roles='AD DS, DNS, GC'; Fsmo='RID Master'; OS='Windows Server 2022' }
-    @{ Id='dc03'; Name='CABOT-DC03'; Site='Branch1'; IPv4='10.10.2.10'; Status='Warning'; Replication='Warning'; DNS='Healthy'; Uptime='97 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2022' }
-    @{ Id='dc04'; Name='CABOT-DC04'; Site='Branch1'; IPv4='10.10.2.11'; Status='Critical'; Replication='Healthy'; DNS='Critical'; Uptime='131 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2019' }
-    @{ Id='dc05'; Name='CABOT-DC05'; Site='Branch2'; IPv4='10.10.3.10'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='31 days'; Roles='AD DS, DNS, GC'; Fsmo='Infrastructure Master'; OS='Windows Server 2022' }
-    @{ Id='dc06'; Name='CABOT-DC06'; Site='Branch2'; IPv4='10.10.3.11'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='29 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2022' }
+    @{ Id='dc01'; Name='DC01'; Site='HQ'; IPv4='192.0.2.10'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='42 days'; Roles='AD DS, DNS, GC'; Fsmo='PDC Emulator'; OS='Windows Server 2022' }
+    @{ Id='dc02'; Name='DC02'; Site='HQ'; IPv4='192.0.2.11'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='38 days'; Roles='AD DS, DNS, GC'; Fsmo='RID Master'; OS='Windows Server 2022' }
+    @{ Id='dc03'; Name='DC03'; Site='Branch1'; IPv4='198.51.100.10'; Status='Warning'; Replication='Warning'; DNS='Healthy'; Uptime='97 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2022' }
+    @{ Id='dc04'; Name='DC04'; Site='Branch1'; IPv4='198.51.100.11'; Status='Critical'; Replication='Healthy'; DNS='Critical'; Uptime='131 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2019' }
+    @{ Id='dc05'; Name='DC05'; Site='Branch2'; IPv4='203.0.113.10'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='31 days'; Roles='AD DS, DNS, GC'; Fsmo='Infrastructure Master'; OS='Windows Server 2022' }
+    @{ Id='dc06'; Name='DC06'; Site='Branch2'; IPv4='203.0.113.11'; Status='Healthy'; Replication='Healthy'; DNS='Healthy'; Uptime='29 days'; Roles='AD DS, DNS'; Fsmo='None'; OS='Windows Server 2022' }
 )
+# The topology model carries only the fields needed for graph presentation.
+# ParentId and Containment edges describe hierarchy. Replication edges below
+# are separately declared fictional examples; they are never inferred from sites.
+$TopologyResources = @(
+    (New-PSIResource -Definition @{ Id='forest'; Name='root.example.com'; Type='Forest'; Status='Unknown' })
+    (New-PSIResource -Definition @{ Id='domain'; Name='root.example.com'; Type='Domain'; Status='Unknown' })
+    (New-PSIResource -Definition @{ Id='hq'; Name='HQ'; Type='Site'; Status='Unknown' })
+    (New-PSIResource -Definition @{ Id='branch1'; Name='Branch1'; Type='Site'; Status='Unknown' })
+    (New-PSIResource -Definition @{ Id='branch2'; Name='Branch2'; Type='Site'; Status='Unknown' })
+    foreach ($Dc in $DcSamples) {
+        New-PSIResource -Definition @{ Id=$Dc.Id; Name=$Dc.Name; Type='Domain Controller'; Status=$Dc.Status; Properties=@{ Site=$Dc.Site; IPv4=$Dc.IPv4 } }
+    }
+)
+$TopologyNodes = @(
+    @{ NodeId='forest'; ResourceId='forest'; Label='root.example.com'; NodeType='Forest'; Status='Unknown'; Icon='Relationship' }
+    @{ NodeId='domain'; ResourceId='domain'; ParentId='forest'; Label='root.example.com'; NodeType='Domain'; Status='Unknown'; Icon='Relationship' }
+    @{ NodeId='hq'; ResourceId='hq'; ParentId='domain'; Label='HQ'; NodeType='Site'; Status='Unknown'; Icon='Relationship' }
+    @{ NodeId='branch1'; ResourceId='branch1'; ParentId='domain'; Label='Branch1'; NodeType='Site'; Status='Unknown'; Icon='Relationship' }
+    @{ NodeId='branch2'; ResourceId='branch2'; ParentId='domain'; Label='Branch2'; NodeType='Site'; Status='Unknown'; Icon='Relationship' }
+    foreach ($Dc in $DcSamples) {
+        $SiteId = switch ($Dc.Site) { HQ { 'hq' } Branch1 { 'branch1' } Branch2 { 'branch2' } }
+        @{ NodeId=$Dc.Id; ResourceId=$Dc.Id; ParentId=$SiteId; Label=$Dc.Name; Icon='ResourceServer' }
+    }
+)
+$TopologyRelationshipSpecs = @(
+    @{ Id='forest-domain'; SourceResourceId='forest'; TargetResourceId='domain'; Type='contains'; Category='Containment'; Label='Forest contains domain'; Status='Unknown' }
+    @{ Id='domain-hq'; SourceResourceId='domain'; TargetResourceId='hq'; Type='contains'; Category='Containment'; Label='Domain contains HQ'; Status='Unknown' }
+    @{ Id='domain-branch1'; SourceResourceId='domain'; TargetResourceId='branch1'; Type='contains'; Category='Containment'; Label='Domain contains Branch1'; Status='Unknown' }
+    @{ Id='domain-branch2'; SourceResourceId='domain'; TargetResourceId='branch2'; Type='contains'; Category='Containment'; Label='Domain contains Branch2'; Status='Unknown' }
+)
+foreach ($Dc in $DcSamples) {
+    $SiteId = switch ($Dc.Site) { HQ { 'hq' } Branch1 { 'branch1' } Branch2 { 'branch2' } }
+    $TopologyRelationshipSpecs += @{ Id=$SiteId + '-' + $Dc.Id; SourceResourceId=$SiteId; TargetResourceId=$Dc.Id; Type='contains'; Category='Containment'; Label='Site contains ' + $Dc.Name; Status='Unknown' }
+}
+$TopologyRelationshipSpecs += @(
+    @{ Id='rep-dc01-dc02'; SourceResourceId='dc01'; TargetResourceId='dc02'; Type='replicates-to'; Category='Replication'; Label='Sample replication DC01 to DC02'; Status='Healthy'; Description='Explicit fictional replication link.' }
+    @{ Id='rep-dc01-dc03'; SourceResourceId='dc01'; TargetResourceId='dc03'; Type='replicates-to'; Category='Replication'; Label='Sample replication DC01 to DC03'; Status='Warning'; Description='Explicit fictional replication link needing review.' }
+    @{ Id='rep-dc02-dc05'; SourceResourceId='dc02'; TargetResourceId='dc05'; Type='replicates-to'; Category='Replication'; Label='Sample replication DC02 to DC05'; Status='Healthy'; Description='Explicit fictional replication link.' }
+    @{ Id='rep-dc03-dc04'; SourceResourceId='dc03'; TargetResourceId='dc04'; Type='replicates-to'; Category='Replication'; Label='Sample replication DC03 to DC04'; Status='Unknown'; Description='Explicit fictional link with no health conclusion.' }
+)
+$TopologyRelationships = @($TopologyRelationshipSpecs | ForEach-Object { New-PSIRelationship -Definition $_ })
+$TopologyModel = New-PSIApplicationModel -Resources $TopologyResources -Relationships $TopologyRelationships
+$Report | Set-PSIApplicationModel -Model $TopologyModel | Out-Null
 $DcChecks = @($DcSamples | ForEach-Object {
     [pscustomobject]@{ Name=$_.Name; Site=$_.Site; Replication=$_.Replication; DNS=$_.DNS; Status=$_.Status }
 })
@@ -75,7 +119,7 @@ $InspectorItems = @(
         }
         @{
             Id='inspector-' + $Dc.Id; ResourceId=$Dc.Id
-            Title=$Dc.Name + '.root.cabot-corp.com'; Subtitle='Synthetic domain controller'; Status=$Dc.Status
+            Title=$Dc.Name + '.root.example.com'; Subtitle='Synthetic domain controller'; Status=$Dc.Status
             Breadcrumb=@('Infrastructure','Sites',$Dc.Site)
             Actions=@(@{ Label='View checks'; TargetView='checks' })
             Metadata=[ordered]@{ Site=$Dc.Site; Roles=$Dc.Roles }
@@ -93,7 +137,7 @@ $InspectorItems = @(
                 @{ Id='Findings'; Title='Findings'; Blocks=$FindingBlocks },
                 @{ Id='Recommendations'; Title='Recommendations'; Blocks=$RecommendationBlocks },
                 @{ Id='Related'; Title='Related'; Blocks=@(
-                    @{ Title='Domain'; Text='root.cabot-corp.com'; ResourceId='domain'; ActionLabel='Open domain' }
+                    @{ Title='Domain'; Text='root.example.com'; ResourceId='domain'; ActionLabel='Open domain' }
                 ) }
             )
         }
@@ -105,13 +149,13 @@ $Report | Add-PSIView -Id overview -Title Summary -Subtitle 'Fictional infrastru
     Add-PSISection -Title 'Health Overview' | Add-PSIRow |
     Add-PSIKPI -Title 'Overall' -Value 'Critical' -Subtitle 'DNS sample needs review' -Status Critical -Icon SeverityError -Span 2 |
     Add-PSIKPI -Title 'Controllers' -Value 6 -Subtitle '4 healthy / 3 sites' -Status Info -Icon ResourceServer -Span 2 |
-    Add-PSIKPI -Title 'Replication' -Value '1 warning' -Subtitle 'CABOT-DC03' -Status Warning -Icon SeverityWarning -Span 2 |
-    Add-PSIKPI -Title 'DNS' -Value '1 critical' -Subtitle 'CABOT-DC04' -Status Critical -Icon SeverityError -Span 2 |
+    Add-PSIKPI -Title 'Replication' -Value '1 warning' -Subtitle 'DC03' -Status Warning -Icon SeverityWarning -Span 2 |
+    Add-PSIKPI -Title 'DNS' -Value '1 critical' -Subtitle 'DC04' -Status Critical -Icon SeverityError -Span 2 |
     Add-PSIKPI -Title 'Evidence' -Value '6 / 6' -Subtitle 'Sample DC records present' -Status Info -Icon Document -Span 2 |
     Add-PSIKPI -Title 'Attention' -Value 2 -Subtitle 'Affected controllers' -Status Warning -Icon SeverityWarning -Span 2 | Out-Null
 $Report | Add-PSISection -Title 'Requires Attention' | Add-PSIRow |
-    Add-PSIAlert -Status Critical -Title 'CABOT-DC04 - DNS' -Message 'Fictional DNS check is critical. Select CABOT-DC04 to inspect its evidence.' |
-    Add-PSIAlert -Status Warning -Title 'CABOT-DC03 - Replication' -Message 'Fictional replication check needs review. Select CABOT-DC03 to inspect its evidence.' | Out-Null
+    Add-PSIAlert -Status Critical -Title 'DC04 - DNS' -Message 'Fictional DNS check is critical. Select DC04 to inspect its evidence.' |
+    Add-PSIAlert -Status Warning -Title 'DC03 - Replication' -Message 'Fictional replication check needs review. Select DC03 to inspect its evidence.' | Out-Null
 
 $Report | Add-PSIView -Id checks -Title Checks -Subtitle 'Synthetic controller checks' -Icon Rules -TabCount 6 |
     Add-PSISection -Title 'Controller checks' | Add-PSIRow |
@@ -129,13 +173,15 @@ $Report | Add-PSIView -Id services -Title Evidence -Subtitle 'Searchable fiction
     Add-PSITable -Id service-evidence -Title 'Service evidence' -Data $Services -Columns @('Name','Region','Status','Availability','Owner') -PageSize 5 | Out-Null
 
 $Report | Add-PSIView -Id topology -Title Topology -Subtitle 'Fictional site distribution' -Icon Relationship -TabCount 3 |
-    Add-PSISection -Title 'Topology Summary' | Add-PSIRow |
-    Add-PSIText -Text 'Three fictional sites contain six sample controllers. HQ: 2, Branch1: 2, Branch2: 2.' -Size Small | Out-Null
+    Add-PSISection -Title 'Fictional topology' | Add-PSIRow |
+    Add-PSIText -Text 'Legend: dashed = containment; solid = explicitly declared fictional replication. Node text shows status. Unknown = no verdict; evidence-only = unassessed context.' -Size Small |
+    Add-PSIRow |
+    Add-PSITopology -Id infrastructure-topology -Title 'Forest, sites and controllers' -Nodes $TopologyNodes -DetailProperties @('Site','IPv4') -FilterProperties @('Site') -MaxNodes 30 -LinkViews @{ Resource='overview'; Finding='notes'; Evidence='services' } | Out-Null
 
 $Report | Add-PSIView -Id notes -Title Actions -Subtitle 'Sample follow-up only' -Icon Document -TabCount 2 |
     Add-PSISection -Title 'Suggested sample review' | Add-PSIRow |
-    Add-PSIRecommendation -Status Critical -Title 'Review CABOT-DC04 DNS evidence' -Description 'The fictional DNS check is critical.' -ActionText 'Open CABOT-DC04 in Resources and inspect its evidence reference.' |
-    Add-PSIRecommendation -Status Warning -Title 'Review CABOT-DC03 replication evidence' -Description 'The fictional replication check is warning.' -ActionText 'Open CABOT-DC03 in Resources and inspect its evidence reference.' | Out-Null
+    Add-PSIRecommendation -Status Critical -Title 'Review DC04 DNS evidence' -Description 'The fictional DNS check is critical.' -ActionText 'Open DC04 in Resources and inspect its evidence reference.' |
+    Add-PSIRecommendation -Status Warning -Title 'Review DC03 replication evidence' -Description 'The fictional replication check is warning.' -ActionText 'Open DC03 in Resources and inspect its evidence reference.' | Out-Null
 $Report | Add-PSISection -Title 'About this snapshot' | Add-PSIRow |
     Add-PSIText -Text 'This standalone benchmark contains synthetic services only. No live infrastructure was queried.' | Out-Null
 

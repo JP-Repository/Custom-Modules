@@ -84,10 +84,11 @@ def main():
     parser.add_argument('--relationship-detail-filter', default='', help='Filter label=value, such as Site=West')
     parser.add_argument('--resource', default='', help='Select a synthetic Resource Explorer node ID')
     parser.add_argument('--inspector-tab', default='', help='Select a Context Inspector tab by visible label')
+    parser.add_argument('--topology-workspace', action='store_true', help='Exercise the Fluent topology and Resource Workspace integration')
     args = parser.parse_args()
     chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
     report_dir = Path(__file__).resolve().parents[1] / 'Reports'
-    with tempfile.TemporaryDirectory(prefix='psi-browser-', dir=report_dir) as profile:
+    with tempfile.TemporaryDirectory(prefix='psi-browser-', dir=report_dir, ignore_cleanup_errors=True) as profile:
         process = subprocess.Popen([chrome, '--headless=new', '--disable-gpu', '--disable-dev-shm-usage',
             '--no-sandbox', '--remote-allow-origins=*', '--remote-debugging-port=0',
             '--user-data-dir=' + profile, 'about:blank'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -115,6 +116,7 @@ def main():
             if b'HTTP/1.1 101' not in handshake:
                 raise RuntimeError('DevTools WebSocket upgrade failed')
             sequence = 0
+            runtime_errors = []
 
             def call(method, params=None):
                 nonlocal sequence
@@ -122,6 +124,10 @@ def main():
                 send(sock, {'id': sequence, 'method': method, 'params': params or {}})
                 while True:
                     message = receive(sock)
+                    if message.get('method') == 'Runtime.exceptionThrown':
+                        runtime_errors.append(message.get('params', {}).get('exceptionDetails', {}).get('text', 'Uncaught JavaScript exception'))
+                    if message.get('method') == 'Runtime.consoleAPICalled' and message.get('params', {}).get('type') == 'error':
+                        runtime_errors.append('console.error')
                     if message.get('id') == sequence:
                         if 'error' in message:
                             raise RuntimeError(message['error'])
@@ -209,6 +215,34 @@ def main():
                 evaluate("document.querySelector('.psi-rel-graph-node[data-psi-rel-id=' + %s + ']').dispatchEvent(new MouseEvent('click',{bubbles:true}))" % json.dumps('"' + args.relationship_node_id + '"'))
             if args.relationship_edge_id:
                 evaluate("document.querySelector('.psi-rel-edge-group[data-psi-rel-id=' + %s + ']').dispatchEvent(new MouseEvent('click',{bubbles:true}))" % json.dumps('"' + args.relationship_edge_id + '"'))
+            topology_metrics = None
+            if args.topology_workspace:
+                topology_metrics = evaluate("JSON.stringify((()=>{let root=document.querySelector('#infrastructure-topology'),"
+                    "svg=root.querySelector('[data-psi-rel-svg]'),viewport=root.querySelector('.psi-rel-viewport'),"
+                    "dc=root.querySelector('.psi-rel-graph-node[data-psi-rel-id=dc01]'),"
+                    "initial=svg.style.width,rect=viewport.getBoundingClientRect(),"
+                    "visible=getComputedStyle(viewport).display!=='none'&&rect.width>0&&rect.height>0,"
+                    "nodeCount=root.querySelectorAll('.psi-rel-graph-node').length,edgeCount=root.querySelectorAll('.psi-rel-edge-group').length,"
+                    "iconCount=root.querySelectorAll('.psi-rel-graph-node svg').length;"
+                    "root.querySelector('[data-psi-rel-zoom=in]').click();let zoomed=svg.style.width!==initial;"
+                    "root.querySelector('[data-psi-rel-zoom=fit]').click();let fitted=svg.style.width!=='';"
+                    "root.querySelector('[data-psi-rel-zoom=reset]').click();"
+                    "viewport.scrollLeft=Math.min(400,viewport.scrollWidth-viewport.clientWidth);let panned=viewport.scrollLeft>0;"
+                    "viewport.scrollIntoView({block:'center'});let scrollBefore=scrollY;"
+                    "dc.dispatchEvent(new MouseEvent('click',{bubbles:true}));"
+                    "let pagePreserved=Math.abs(scrollY-scrollBefore)<5;"
+                    "let selected=document.querySelector('[data-psi-resource-node=dc01]').getAttribute('aria-selected')==='true',"
+                    "header=document.querySelector('[data-psi-resource-header-title]').textContent,"
+                    "inspector=document.querySelector('[data-psi-inspector-title]').textContent,"
+                    "viewBefore=document.querySelector('[data-psi-app-view]:not([hidden])').getAttribute('data-psi-app-view');"
+                    "document.querySelector('#psi-app-item-overview').click();document.querySelector('#psi-app-item-topology').click();"
+                    "return {visible:visible,width:Math.round(rect.width),height:Math.round(rect.height),nodes:nodeCount,"
+                    "edges:edgeCount,icons:iconCount,zoomed:zoomed,fitted:fitted,panned:panned,pagePreserved:pagePreserved,selected:selected,"
+                    "header:header,inspector:inspector,viewBefore:viewBefore,viewAfter:document.querySelector('[data-psi-app-view]:not([hidden])').getAttribute('data-psi-app-view'),"
+                    "sameNode:dc===root.querySelector('.psi-rel-graph-node[data-psi-rel-id=dc01]'),"
+                    "nodeCountAfter:root.querySelectorAll('.psi-rel-graph-node').length,edgeCountAfter:root.querySelectorAll('.psi-rel-edge-group').length,"
+                    "overflow:document.documentElement.scrollWidth>innerWidth}})())")
+                evaluate("document.querySelector('#infrastructure-topology .psi-rel-viewport').scrollIntoView({block:'center'})")
             detail_filter_metrics = None
             if args.relationship_detail_filter:
                 label, value = args.relationship_detail_filter.split('=', 1)
@@ -241,6 +275,9 @@ def main():
                 print(relationship_metrics)
             if detail_filter_metrics is not None:
                 print(detail_filter_metrics)
+            if topology_metrics is not None:
+                print(topology_metrics)
+            print(json.dumps({'javascriptErrors': runtime_errors}))
             print(args.output)
         finally:
             process.terminate()
@@ -248,6 +285,7 @@ def main():
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 process.kill()
+            time.sleep(.2)
 
 
 if __name__ == '__main__':

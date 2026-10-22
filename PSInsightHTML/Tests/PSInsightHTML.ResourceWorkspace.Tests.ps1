@@ -33,8 +33,9 @@ Describe 'Fluent Resource Explorer and Context Inspector' {
         { $App | Add-PSIInspector -Id context -Title Context -Items @(@{ Id='one'; ResourceId='one' }) } | Should -Throw '*Resource Explorer first*'
     }
     It 'renders the hierarchical node contract and selected state' {
-        $script:Html | Should -Match 'data-psi-resource-node="domain"[^>]*aria-level="1"'
-        $script:Html | Should -Match 'data-psi-resource-node="dc01" data-psi-resource-parent="hq"[^>]*aria-level="4"[^>]*aria-selected="true"'
+        $script:Html | Should -Match 'data-psi-resource-node="forest"[^>]*aria-level="1"'
+        $script:Html | Should -Match 'data-psi-resource-node="domain"[^>]*aria-level="2"'
+        $script:Html | Should -Match 'data-psi-resource-node="dc01" data-psi-resource-parent="hq"[^>]*aria-level="5"[^>]*aria-selected="true"'
         $script:Html | Should -Match 'data-psi-resource-node="dc03"[^>]*data-psi-resource-status="Warning"'
         $script:Html | Should -Match 'role="tree"'
         $script:Html | Should -Match 'aria-expanded="true"'
@@ -59,8 +60,8 @@ Describe 'Fluent Resource Explorer and Context Inspector' {
         $script:Registry.dc01.ResourceId | Should -Be 'dc01'
         $script:Registry.dc03.Status | Should -Be 'Warning'
         $script:Registry.dc04.Status | Should -Be 'Critical'
-        @($script:Registry.dc01.Properties | Where-Object Label -eq 'IPv4')[0].Value | Should -Be '10.10.1.10'
-        $script:Html | Should -Not -Match 'data-psi-resource-node="dc01"[^>]*10\.10\.1\.10'
+        @($script:Registry.dc01.Properties | Where-Object Label -eq 'IPv4')[0].Value | Should -Be '192.0.2.10'
+        $script:Html | Should -Not -Match 'data-psi-resource-node="dc01"[^>]*192\.0\.2\.10'
     }
     It 'provides properties, evidence, findings, recommendations and related-resource tabs' {
         $script:Registry.dc01.Sections.Id | Should -Contain 'Evidence'

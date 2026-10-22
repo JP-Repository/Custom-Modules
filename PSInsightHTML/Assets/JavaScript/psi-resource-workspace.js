@@ -197,7 +197,7 @@
     })[0];
     if (target) { target.click(); }
   }
-  function select(node, moveFocus) {
+  function select(node, moveFocus, openTarget) {
     if (!node || node.getAttribute('aria-disabled') === 'true') { return; }
     if (selected) { selected.setAttribute('aria-selected', 'false'); selected.tabIndex = -1; }
     selected = node;
@@ -209,8 +209,8 @@
     renderHeader(node, record);
     renderInspector(node, record);
     var view = node.getAttribute('data-psi-resource-target');
-    if (view) { openView(view); }
-    if (isMobileExplorer()) { setExplorerOpen(false); }
+    if (view && openTarget !== false) { openView(view); }
+    if (isMobileExplorer() && shell.classList.contains('psi-resource-open')) { setExplorerOpen(false); }
   }
   nodes.forEach(function (node) {
     node.addEventListener('click', function (event) {
@@ -236,6 +236,10 @@
       if (visible[next]) { visible[next].focus(); }
       event.preventDefault();
     });
+  });
+  document.addEventListener('psi:relationship-select', function (event) {
+    var resourceId = event.detail && event.detail.resourceId;
+    if (resourceId && byId[resourceId]) { select(byId[resourceId], false, false); }
   });
   search.addEventListener('input', updateTree);
   explorerButton.addEventListener('click', function () {
