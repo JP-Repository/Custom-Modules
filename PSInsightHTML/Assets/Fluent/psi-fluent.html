@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{THEME}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="generator" content="PSInsightHTML {{VERSION}} (Fluent renderer)">
+<title>{{TITLE}}</title>
+<style>
+/*{{CSS}}*/
+</style>
+</head>
+<body>
+<div class="pf-app" id="pf-app">
+  <header class="pf-titlebar" id="pf-titlebar"></header>
+  <nav class="pf-rail" id="pf-rail" aria-label="Report navigation"></nav>
+  <main class="pf-content" id="pf-view" tabindex="-1"></main>
+  <aside class="pf-pane" id="pf-pane" aria-hidden="true" aria-label="Details"></aside>
+</div>
+<div class="pf-palette" id="pf-palette" hidden>
+  <div class="pf-palette-box" role="dialog" aria-modal="true" aria-label="Search the report">
+    <div class="pf-palette-in"><span class="pf-ico" data-icon="search"></span><input id="pf-palette-input" type="text" placeholder="Search pages, findings, KPIs and table rows" autocomplete="off" spellcheck="false" aria-label="Search"><kbd>Esc</kbd></div>
+    <div class="pf-palette-res" id="pf-palette-res" role="listbox"></div>
+  </div>
+</div>
+<div class="pf-tip" id="pf-tip" role="tooltip"></div>
+<div class="pf-toast" id="pf-toast" role="status" aria-live="polite"></div>
+<noscript><div style="padding:24px;font-family:Segoe UI,sans-serif">This report is an interactive application and requires JavaScript. Use the classic renderer (Export-PSIReport -Renderer Classic) for a script-free document.</div></noscript>
+<script type="application/json" id="pf-data">{{DATA}}</script>
+<script type="application/json" id="pf-icons">{{ICONS}}</script>
+<script>
+/*{{EXPORTJS}}*/
+</script>
+<script>
+/*{{JS}}*/
+</script>
+</body>
+</html>

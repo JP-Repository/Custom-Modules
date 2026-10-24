@@ -46,7 +46,7 @@ $null=$Report |
     Add-PSIView -Id overview -Title 'Overview' -Subtitle "Windows Server $TargetOS readiness and comparison" -Icon NavigationHome -Initial -Commands @(@{ Label='Review checks'; Icon='Rules'; TargetView='checks' }) |
     Add-PSISection -Title "Windows Server $TargetOS readiness" |
     Add-PSIRow -Columns 12 |
-    Add-PSIStatus -Status $(if ($Inventory.CollectionCoverage.OverallPercent -ge 99) { 'Healthy' } else { 'Warning' }) -Label "Evidence coverage $($Inventory.CollectionCoverage.OverallPercent)% | Readiness score $($Assessment.Score)%" -Message 'Coverage and readiness are separate measures. Review Collection Coverage before acting on the decision.' |
+    Add-PSIStatus -Status $(if ($Inventory.CollectionCoverage.OverallPercent -ge 99) { 'Informational' } else { 'Warning' }) -Label "Collection evidence completeness: $($Inventory.CollectionCoverage.OverallPercent)%" -Message 'This measures evidence availability, independent of the readiness decision below. Review Collection Coverage before acting on the decision.' |
     Add-PSIRow -Columns 12 |
     Add-PSIAssessmentOverview |
     Add-PSIRow -Columns 12 |

@@ -54,10 +54,12 @@ Describe 'PSInsightHTML Windows PowerShell 5.1 source compatibility' {
         $UnexpectedAssets | Should -BeNullOrEmpty
     }
 
-    It 'imports version 0.10.0 and retains the intended public functions' {
+    It 'imports the manifest version, stamps it on reports and retains the intended public functions' {
         $Module = Get-Module PSInsightHTML
         $Module | Should -Not -BeNullOrEmpty
-        $Module.Version.ToString() | Should -Be '0.10.0'
+        $ManifestVersion = (Import-PowerShellDataFile -Path $script:CompatibilityManifest).ModuleVersion
+        $Module.Version.ToString() | Should -Be $ManifestVersion
+        (New-PSIReport -Title 'Version check').ModuleVersion | Should -Be $ManifestVersion
         @(Get-Command -Module PSInsightHTML -CommandType Function).Count | Should -Be 50
     }
 

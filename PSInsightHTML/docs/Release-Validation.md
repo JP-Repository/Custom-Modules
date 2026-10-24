@@ -39,20 +39,28 @@ $Module = Get-Module PSInsightHTML
 $Commands = @(Get-Command -Module PSInsightHTML -CommandType Function)
 $Module.Version.ToString()
 $Commands.Count
-if ($Module.Version.ToString() -ne '0.10.0') { throw 'Unexpected module version.' }
-if ($Commands.Count -ne 30) { throw 'Unexpected exported command count.' }
+if ($Module.Version.ToString() -ne '0.11.2') { throw 'Unexpected module version.' }
+if ($Commands.Count -ne 50) { throw 'Unexpected exported command count.' }
 ```
 
-Generate a standalone sample without opening a browser:
+Generate a standalone Fluent sample without opening a browser:
 
 ```powershell
 $OutputPath = Join-Path $env:TEMP 'PSInsightHTML-WinPS51-Demo.html'
-& (Join-Path $ModuleRoot 'Examples\New-DemoReport.ps1') `
-    -OutputPath $OutputPath `
-    -NoBrowser
-if (-not (Test-Path -LiteralPath $OutputPath -PathType Leaf)) {
-    throw 'Sample report generation failed.'
+$PreviousRenderer = $env:PSINSIGHTHTML_RENDERER
+try {
+    $env:PSINSIGHTHTML_RENDERER = 'Fluent'
+    & (Join-Path $ModuleRoot 'Examples\New-DemoReport.ps1') `
+        -OutputPath $OutputPath `
+        -NoBrowser
+    if (-not (Test-Path -LiteralPath $OutputPath -PathType Leaf)) {
+        throw 'Sample report generation failed.'
+    }
+    if (-not ([System.IO.File]::ReadAllText($OutputPath)).Contains('id="pf-app"')) {
+        throw 'Fluent application shell was not generated.'
+    }
 }
+finally { $env:PSINSIGHTHTML_RENDERER = $PreviousRenderer }
 ```
 
 When Pester 5 is installed on the Windows validation host, run the compatibility test and then the complete suite:

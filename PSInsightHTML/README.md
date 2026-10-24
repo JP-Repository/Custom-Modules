@@ -2,11 +2,12 @@
 
 Enterprise PowerShell HTML assessment and reporting framework.
 
-Version 0.10.0 builds standalone reports from PowerShell objects. The generic engine renders supplied data; provider-specific interpretation lives under `Providers/`.
+Version 0.11.2 builds standalone reports from PowerShell objects. The generic engine renders supplied data; provider-specific interpretation lives under `Providers/`.
 
 ## Features
 
 - Standalone HTML with embedded CSS, JavaScript, icons, and SVG charts; no CDN required.
+- Fluent application renderer with navigation, findings and evidence panes, and a search palette; Classic remains available for existing report scripts.
 - Light, Dark, and Auto themes, responsive layout, sticky report and assessment navigation, and print support.
 - Multi-view Application reports have [global search and a command palette](docs/Application-Search.md) for views, checks, findings, resources, evidence, and exceptions.
 - KPI cards with restrained pointer and keyboard interaction feedback, plus key/value panels, status indicators, alerts, text, insights, and recommendations.
@@ -67,11 +68,11 @@ $Report | Add-PSISection -Title 'Servers' | Add-PSIRow -Columns 12 |
     Add-PSIKPI -Title 'Servers' -Value $Servers.Count -Status Neutral -Span 3 | Out-Null
 $Report | Add-PSIRow | Add-PSITable -Title 'Inventory' -Data $Servers |
     Out-Null
-$Output = Export-PSIReport -Report $Report -Path ./Reports/Infrastructure.html
+$Output = Export-PSIReport -Report $Report -Path ./Reports/Infrastructure.html -Renderer Fluent
 $Output.FullName
 ```
 
-Open the resulting HTML in a browser. `Export-PSIReport` creates missing output directories and returns a `FileInfo`; it does not open a browser automatically. See the [Getting Started tutorial](docs/Getting-Started.md) for a complete investigation workflow.
+Open the resulting HTML in a browser. The quick start explicitly selects Fluent; omitting `-Renderer` retains the Classic default for existing scripts. `-Renderer Auto` chooses Fluent for supported components. `Export-PSIReport` creates missing output directories and returns a `FileInfo`; it does not open a browser automatically. See the [Getting Started tutorial](docs/Getting-Started.md) for a complete investigation workflow.
 
 ## Core concepts and layout
 

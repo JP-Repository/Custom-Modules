@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.11.2 (release candidate; native Windows PowerShell 5.1 validation pending)
+
+- **Fluent application renderer** (opt-in): `Export-PSIReport -Renderer Fluent|Auto|Classic`, or `$env:PSINSIGHTHTML_RENDERER`. Renders the existing report objects unchanged - no provider changes - as a navigation-rail application with data grids, detail pane, evidence pane, an "All findings" master/detail page, a search palette across pages, findings, metrics and table rows, Light/Dark/Auto themes and print of every page. Supports Text, KeyValue, KPI, Sparkline, EmptyState, Insight, Finding, Status, Alert, Recommendation, Table, Chart, Explorer, AssessmentOverview, Tree, Topology, RelationshipExplorer and the resource workspace. `Auto` falls back to Classic for unknown component types. See [docs/Fluent-Renderer.md](docs/Fluent-Renderer.md).
+- Fluent reports are 2-3x smaller and up to 9x faster to generate than Classic for the same report (table cells are projected without per-cell helper calls).
+- Module import: about 13 s down to about 2 s. Sources are loaded from a generated `PSInsightHTML.Bundle.ps1` (one file instead of ~95) when its fingerprint matches the sources; otherwise the sources load as before with a warning. Regenerate with `Build/Build-PSInsightHTML.ps1`.
+- Version is read from the manifest (was hard-coded `0.10.0` in `New-PSIReport`).
+- Added `Build/New-PSISampleReports.ps1` (regenerate every sample report into a labelled folder with timings) and `Build/Test-PSIFluentParity.ps1` (table data parity between report objects and the Fluent model).
+- Added `docs/Component-Contract.md`, the as-implemented contract of every component.
+- The Fluent Light palette now uses the muted canvas and off-white surfaces established in the earlier application styling.
+- Added direct Fluent renderer tests; the full PowerShell 7/Pester suite passes 550 tests.
+- Classic renderer output is unchanged. The module export default remains Classic; the sample build selects Fluent.
+
 ## 0.10.0
 
 - Added sticky generic report section navigation with active-section tracking, accessible current-location state, dynamic anchor offsets, and composed-assessment navigation support.

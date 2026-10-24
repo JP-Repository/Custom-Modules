@@ -59,7 +59,9 @@ function New-PSIReport {
         Subtitle     = $Subtitle
         Theme        = $Theme
         GeneratedOn  = Get-Date
-        ModuleVersion = '0.10.0'
+        # From the command's own module (manifest). $script: scope is not reliable here:
+        # provider report scripts invoked with & get their own script scope.
+        ModuleVersion = [string] $MyInvocation.MyCommand.Module.Version
         Sections     = [System.Collections.Generic.List[object]]::new()
         Assessments  = [System.Collections.Generic.List[object]]::new()
         Findings     = [System.Collections.Generic.List[object]]::new()

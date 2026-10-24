@@ -133,6 +133,8 @@ Describe 'AD DC readiness provider sample and rules' {
                 $Html | Should -Match ('data-theme="{0}"' -f $Theme)
                 foreach ($View in @('overview','compatibility','replication','dns','security','gpo','checks','evidence','postbuild')) { $Html | Should -Match ('data-psi-app-view="{0}"' -f $View) }
                 $Html | Should -Match 'NOT READY'
+                $Html | Should -Match 'Collection evidence completeness: 100%'
+                $Html | Should -Match 'This measures evidence availability, independent of the readiness decision below'
                 $Html | Should -Not -Match '<script\s+[^>]*src\s*=|<link\s+[^>]*href\s*=|\bfetch\s*\('
                 (Test-Path (Join-Path $Temp 'NormalizedInventory-2025.json')) | Should -BeTrue
                 (Test-Path (Join-Path $Temp 'Checks-2025.csv')) | Should -BeTrue
