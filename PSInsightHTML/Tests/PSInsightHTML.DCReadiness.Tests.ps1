@@ -120,8 +120,8 @@ Describe 'AD DC readiness provider sample and rules' {
         $Result25.Assessment.Checks[0].Metadata.LastReviewed | Should -Be '2026-10-16'
         $Result25.Sources.Exchange.Url | Should -Match 'learn.microsoft.com'
     }
-    It 'retains the legacy provider catalog and does not export this example as core API' {
-        @(Get-PSIReportCatalog).Count | Should -Be 6
+    It 'retains the report catalog and keeps DC readiness rules private' {
+        @(Get-PSIReportCatalog).Count | Should -Be 7
         (Get-Command -Module PSInsightHTML -CommandType Function | Where-Object Name -eq 'Test-PSIADDCReadiness').Count | Should -Be 0
     }
     It 'generates standalone light and dark application views plus JSON and CSV outputs' {

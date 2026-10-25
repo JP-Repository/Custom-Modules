@@ -229,6 +229,8 @@ Call `Add-PSIReportOverview` once, after composing the report. It inserts an ove
 | `New-PSIADDNSAssessment` | Fictional DNS servers, resolvers, zones, and forwarding. |
 | `New-PSIADSitesSubnetsAssessment` | Fictional sites, subnets, and topology. |
 
+`Invoke-PSIADCompleteOverview` is a separate **pilot** command for the linked, read-only live report set. It appears in `Get-PSIReportCatalog` after import and also supports fictional sample data. See [Complete AD Domain Overview](Examples/ActiveDirectory/README-CompleteOverview.md).
+
 All six support `-AsAssessment`, returning structured content without exporting HTML or opening a browser. Without it, they generate a standalone report, return the output file, and attempt to open it unless `-NoBrowser` is supplied. `-Path` controls the output file; omitted paths use the module's `Reports/` directory. All support `-Theme Light`, `Dark`, or `Auto` (provider default: `Auto`). Discover capability metadata with `Get-PSIReportCatalog`.
 
 ```powershell
@@ -264,6 +266,9 @@ Paths below are relative to the module directory. From `Custom-Modules`, run scr
 | [New-DemoReport.ps1](Examples/New-DemoReport.ps1) | Generic components, charts, interactive tables, and fictional inventory. |
 | [New-ComposedADAssessmentDemo.ps1](Examples/New-ComposedADAssessmentDemo.ps1) | Five AD assessments in one portfolio with findings, evidence, and overview. |
 | [New-ADUserInventoryReport.ps1](Examples/New-ADUserInventoryReport.ps1) | Workbook-backed user inventory; requires the local sample workbook or supplied input. |
+| [AD Domain Overview](Examples/ActiveDirectory/DomainOverview/README.md) | One domain-scoped snapshot with controller inventory, topology, 2022/2025 readiness, and coverage; fictional sample or explicit live domain. |
+| [Complete AD Domain Overview](Examples/ActiveDirectory/README-CompleteOverview.md) | One command builds a linked set of 16 Fluent reports from one DC snapshot plus scoped directory inventories. |
+| [Live AD inventory examples](Examples/ActiveDirectory/LiveInventory/README.md) | Read-only Groups, GPOs, Users, Computers, OUs, DNS, Replication, and Sites/Subnets inventories. |
 | [ActiveDirectory/DNS/New-DNSAssessmentReport.ps1](Examples/ActiveDirectory/DNS/New-DNSAssessmentReport.ps1) | DNS sample assessment. |
 | [ActiveDirectory/GroupPolicy/New-GPOAssessmentReport.ps1](Examples/ActiveDirectory/GroupPolicy/New-GPOAssessmentReport.ps1) | Group Policy sample assessment. |
 | [ActiveDirectory/Groups/New-GroupAssessmentReport.ps1](Examples/ActiveDirectory/Groups/New-GroupAssessmentReport.ps1) | Groups and membership sample assessment. |
@@ -288,7 +293,7 @@ PSInsightHTML renders data supplied to it. Review report content before distribu
 
 ## Known limitations
 
-Large DOM-backed tables increase file size and browser cost. Current reports are snapshots; historical comparisons and live AD collection are future work. Workbook sample prerequisites and native Windows PowerShell validation remain constraints. See [Known Limitations](docs/Known-Limitations.md) for details.
+Large DOM-backed tables increase file size and browser cost. Reports are snapshots; historical comparisons are future work. Selected AD example scripts support read-only live collection, but require Windows pilot validation. Workbook sample prerequisites and native Windows PowerShell validation remain constraints. See [Known Limitations](docs/Known-Limitations.md) for details.
 
 ## Tests
 

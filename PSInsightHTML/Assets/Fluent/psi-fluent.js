@@ -479,7 +479,7 @@
         }).join('') + '</span>';
       }).join('') +
       '<span class="grow"></span><span class="count" data-g="count"></span>' +
-      (formats.length ? formats.map(function (f) { return '<button class="pf-btn sm" data-g="export" data-f="' + esc(f) + '"' + tipText('Export the filtered rows (all pages)') + '>' + ic(f === 'Print' ? 'print' : 'download', 's12') + esc(f === 'Csv' ? 'CSV' : f === 'Xlsx' ? 'Excel' : 'Print') + '</button>'; }).join('') : '') +
+      (formats.length ? '<details class="pf-export-menu"><summary class="pf-btn sm" aria-label="Export filtered rows">' + ic('download', 's12') + 'Export' + ic('chevronD', 's12') + '</summary><div class="pf-export-options">' + formats.map(function (f) { return '<button type="button" class="pf-btn sm" data-g="export" data-f="' + esc(f) + '"' + tipText('Export the filtered rows (all pages)') + '>' + ic(f === 'Print' ? 'print' : 'download', 's12') + esc(f === 'Csv' ? 'CSV' : f === 'Xlsx' ? 'Excel' : 'Print / PDF') + '</button>'; }).join('') + '</div></details>' : '') +
       '</div><div class="pf-active-filters" data-g="tags"></div>' +
       '<div class="pf-table-wrap"' + (opts.maxHeight ? ' style="max-height:' + opts.maxHeight + '"' : '') + '><table class="pf-dt"><thead><tr>' +
       cols.map(function (ci) { return '<th class="' + (tbl.sort ? 'sortable ' : '') + (tbl.numeric[ci] ? 'num' : '') + '" data-ci="' + ci + '" scope="col">' + esc(tbl.labels[tbl.columns[ci]] || tbl.columns[ci]) + '<span class="ind"></span></th>'; }).join('') +
@@ -547,7 +547,7 @@
         if (g === 'clear') { st.filters = {}; st.ext = []; st.q = ''; st.page = 1; build(); paint(); return; }
         if (g === 'prev') { st.page--; paint(); return; }
         if (g === 'next') { st.page++; paint(); return; }
-        if (g === 'export') { exportRows(tbl, current, b.getAttribute('data-f'), opts); return; }
+        if (g === 'export') { var menu = b.closest('.pf-export-menu'); if (menu) { menu.open = false; } exportRows(tbl, current, b.getAttribute('data-f'), opts); return; }
       }
       if (row && host.contains(row) && !e.target.closest('a,button')) { (opts.onRow || openRow)(tbl, +row.getAttribute('data-r')); }
     });

@@ -52,6 +52,7 @@
         'Add-PSIText'
         'Export-PSIReport'
         'Get-PSIReportCatalog'
+        'Invoke-PSIADCompleteOverview'
         'New-PSIADUserInventory'
         'New-PSIADGroupPolicyAssessment'
         'New-PSIADGroupAssessment'

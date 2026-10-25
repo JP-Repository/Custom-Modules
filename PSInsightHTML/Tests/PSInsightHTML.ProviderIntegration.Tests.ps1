@@ -15,12 +15,12 @@ Describe 'PSInsightHTML provider integration and report catalog' {
         }
     }
 
-    It 'exports catalog and only the six implemented provider reports' {
+    It 'exports catalog, six sample providers, and the complete overview command' {
         $Commands = @(Get-Command -Module PSInsightHTML -CommandType Function | Select-Object -ExpandProperty Name)
         $Expected = @(
             'Get-PSIReportCatalog','New-PSIADUserInventory','New-PSIADGroupPolicyAssessment',
             'New-PSIADGroupAssessment','New-PSIADReplicationAssessment','New-PSIADDNSAssessment',
-            'New-PSIADSitesSubnetsAssessment'
+            'New-PSIADSitesSubnetsAssessment','Invoke-PSIADCompleteOverview'
         )
         foreach ($Name in $Expected) { $Commands | Should -Contain $Name }
         $Commands | Should -Not -Contain 'New-PSIADDomainControllerAssessment'
@@ -29,10 +29,10 @@ Describe 'PSInsightHTML provider integration and report catalog' {
         $Commands | Should -Not -Contain 'Find-PSIADBestSubnetMatch'
     }
 
-    It 'returns complete catalog objects driven by six report metadata files' {
+    It 'returns complete catalog objects driven by seven report metadata files' {
         $Catalog = @(Get-PSIReportCatalog)
-        $Catalog.Count | Should -Be 6
-        @(Get-ChildItem -LiteralPath (Join-Path $script:ProviderProjectRoot 'Providers/ActiveDirectory') -Filter Report.psd1 -Recurse -File).Count | Should -Be 6
+        $Catalog.Count | Should -Be 7
+        @(Get-ChildItem -LiteralPath (Join-Path $script:ProviderProjectRoot 'Providers/ActiveDirectory') -Filter Report.psd1 -Recurse -File).Count | Should -Be 7
         foreach ($Entry in $Catalog) {
             $Entry | Should -BeOfType [pscustomobject]
             foreach ($Name in @('Id','Provider','Name','Description','Category','Command','Status','SupportsSampleData','SupportsProvidedData','SupportsLiveCollection','MinimumPowerShellVersion')) {
@@ -40,19 +40,21 @@ Describe 'PSInsightHTML provider integration and report catalog' {
             }
             $Entry.Provider | Should -Be 'ActiveDirectory'
             $Entry.SupportsSampleData | Should -BeTrue
-            $Entry.SupportsLiveCollection | Should -BeFalse
+            if ($Entry.Command -eq 'Invoke-PSIADCompleteOverview') { $Entry.SupportsLiveCollection | Should -BeTrue }
+            else { $Entry.SupportsLiveCollection | Should -BeFalse }
             $Entry.MinimumPowerShellVersion | Should -Be '5.1'
             (Get-Command -Name $Entry.Command -Module PSInsightHTML -CommandType Function) | Should -Not -BeNullOrEmpty
         }
-        @($Catalog | Where-Object SupportsProvidedData).Count | Should -Be 1
-        ($Catalog | Where-Object SupportsProvidedData).Command | Should -Be 'New-PSIADUserInventory'
+        @($Catalog | Where-Object SupportsProvidedData).Count | Should -Be 2
+        @($Catalog | Where-Object SupportsProvidedData | Select-Object -ExpandProperty Command) | Should -Contain 'New-PSIADUserInventory'
+        @($Catalog | Where-Object SupportsProvidedData | Select-Object -ExpandProperty Command) | Should -Contain 'Invoke-PSIADCompleteOverview'
     }
 
     It 'supports provider, name, and normal pipeline filtering' {
-        @(Get-PSIReportCatalog -Provider ActiveDirectory).Count | Should -Be 6
+        @(Get-PSIReportCatalog -Provider ActiveDirectory).Count | Should -Be 7
         @(Get-PSIReportCatalog -Provider OtherProvider).Count | Should -Be 0
         @(Get-PSIReportCatalog -Name '*Replication*').Count | Should -Be 1
-        @(Get-PSIReportCatalog | Where-Object SupportsSampleData).Count | Should -Be 6
+        @(Get-PSIReportCatalog | Where-Object SupportsSampleData).Count | Should -Be 7
         $Loader = [System.IO.File]::ReadAllText((Join-Path $script:ProviderProjectRoot 'PSInsightHTML.psm1'))
         $CatalogSource = [System.IO.File]::ReadAllText((Join-Path $script:ProviderProjectRoot 'Public/Get-PSIReportCatalog.ps1'))
         $Loader | Should -Not -Match 'ActiveDirectory'
@@ -97,7 +99,7 @@ Describe 'PSInsightHTML provider integration and report catalog' {
 
     It 'keeps provider implementation helpers private after report generation' {
         $Exported = @(Get-Command -Module PSInsightHTML -CommandType Function | Select-Object -ExpandProperty Name)
-        $Exported.Count | Should -Be 50
+        $Exported.Count | Should -Be 51
         $Exported | Should -Not -Contain 'New-PSIADReplicationSampleData'
         $Exported | Should -Not -Contain 'Get-PSIADGroupPolicyDistribution'
         $Exported | Should -Not -Contain 'Import-PSIADUserInventoryWorkbook'

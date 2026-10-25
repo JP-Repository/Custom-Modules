@@ -40,7 +40,7 @@ $Commands = @(Get-Command -Module PSInsightHTML -CommandType Function)
 $Module.Version.ToString()
 $Commands.Count
 if ($Module.Version.ToString() -ne '0.11.2') { throw 'Unexpected module version.' }
-if ($Commands.Count -ne 50) { throw 'Unexpected exported command count.' }
+if ($Commands.Count -ne 51) { throw 'Unexpected exported command count.' }
 ```
 
 Generate a standalone Fluent sample without opening a browser:

@@ -41,6 +41,10 @@ The normalized snapshot is reusable provider input. Readiness rules create their
 
 The already collected remote OS and NIC response projects memory, system drive and NIC address/subnet observations into the shared snapshot. The optional `Health` scope adds CPU and Windows feature observations. A single normalized snapshot can feed this inventory, both readiness target evaluations, and the Health evidence projection without mutation or recollection. See [Health evidence contract](ActiveDirectory-HealthEvidence.md).
 
+## Complete overview consumer
+
+`Invoke-PSIADCompleteOverview` is an exported pilot entry point. It collects one normalized DC snapshot and reuses it across the DC, readiness, health, security, compliance, DNS, replication, and site/subnet reports. Separate scoped read-only queries provide GPO, OU, group, user, and computer inventories. The linked `index.html` reports per-report failures rather than treating missing output as healthy. See [usage and limits](../Examples/ActiveDirectory/README-CompleteOverview.md).
+
 ## Safety and migration
 
 Collectors are strictly read-only; the provider introduces no directory, DNS, policy, service-control, reboot, or registry mutation command. The command adapter and collection-result states remain the safety boundary. The existing GPO, Groups, Replication, DNS, Sites/Subnets, and User Inventory reports keep their current provider implementations. Their future migration opportunity is to reuse this snapshot's scoped inventory, collection coverage, and evidence records where their data needs overlap; their report-specific rules and presentation should remain separate. The current provider does not collect every future DC Inventory, AD Health, Security, or Compliance attribute.

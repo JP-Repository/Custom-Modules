@@ -304,6 +304,11 @@ code, .pf-mono { font-family: var(--pf-mono); font-size: 12px; }
 .pf-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-bottom: 1px solid var(--pf-stroke); }
 .pf-toolbar .grow { flex: 1; }
 .pf-toolbar .count { color: var(--pf-text-3); font-size: 12px; white-space: nowrap; }
+.pf-export-menu { position: relative; }
+.pf-export-menu summary { list-style: none; }
+.pf-export-menu summary::-webkit-details-marker { display: none; }
+.pf-export-options { position: absolute; right: 0; top: calc(100% + 4px); z-index: 5; min-width: 130px; display: grid; gap: 2px; padding: 4px; background: var(--pf-surface); border: 1px solid var(--pf-stroke); border-radius: var(--pf-r-m); box-shadow: var(--pf-shadow-8); }
+.pf-export-options .pf-btn { justify-content: flex-start; border-color: transparent; width: 100%; }
 .pf-input { height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid var(--pf-stroke); border-bottom-color: var(--pf-stroke-strong); border-radius: var(--pf-r-m); background: var(--pf-surface); min-width: 220px; color: var(--pf-muted); position: relative; }
 .pf-input:focus-within { border-bottom: 2px solid var(--pf-brand); }
 .pf-input input { border: 0; outline: 0; background: transparent; flex: 1; min-width: 0; color: var(--pf-text); }

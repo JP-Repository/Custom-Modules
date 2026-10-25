@@ -44,6 +44,7 @@ $Jobs = [ordered]@{
     'AD-DCReadiness-2022'   = { param($o) & "$Ex/ActiveDirectory/DCReadiness/Invoke-PSIADDCReadiness.ps1" -TargetOS 2022 -UseSampleData -OutputPath $o -Theme $Theme -NoBrowser }
     'AD-DCReadiness-2025'   = { param($o) & "$Ex/ActiveDirectory/DCReadiness/Invoke-PSIADDCReadiness.ps1" -TargetOS 2025 -UseSampleData -OutputPath $o -Theme $Theme -NoBrowser }
     'AD-DCInventory'        = { param($o) & "$Ex/ActiveDirectory/DCInventory/Invoke-PSIADDCInventory.ps1" -UseSampleData -OutputPath $o -Theme $Theme -NoBrowser }
+    'AD-DomainOverview'     = { param($o) & "$Ex/ActiveDirectory/DomainOverview/Invoke-PSIADDomainOverview.ps1" -UseSampleData -OutputPath $o -Theme $Theme -NoBrowser }
     'AD-Health'             = { param($o) & "$Ex/ActiveDirectory/Health/Invoke-PSIADHealth.ps1" -UseSampleData -OutputPath $o -Theme $Theme -NoBrowser }
     'AD-HealthEvidence'     = { param($o) & "$Ex/ActiveDirectory/HealthEvidence/Invoke-PSIADHealthEvidence.ps1" -UseSampleData -OutputPath $o -Theme $Theme -NoBrowser }
     'AD-Security'           = { param($o) & "$Ex/ActiveDirectory/Security/Invoke-PSIADSecurity.ps1" -UseSampleData -OutputPath $o -Theme $Theme -NoBrowser }
@@ -52,7 +53,7 @@ $Jobs = [ordered]@{
 
 # The newer AD example scripts treat -OutputPath as a folder and write the HTML
 # plus JSON/CSV artefacts into it; everything else takes a file path.
-$FolderJobs = @('AD-DCReadiness-2022', 'AD-DCReadiness-2025', 'AD-DCInventory', 'AD-Health', 'AD-HealthEvidence', 'AD-Security', 'AD-Compliance')
+$FolderJobs = @('AD-DCReadiness-2022', 'AD-DCReadiness-2025', 'AD-DCInventory', 'AD-DomainOverview', 'AD-Health', 'AD-HealthEvidence', 'AD-Security', 'AD-Compliance')
 
 $Results = foreach ($Name in $Jobs.Keys) {
     if ($Only.Count -and $Name -notin $Only) { continue }

@@ -60,7 +60,7 @@ Describe 'PSInsightHTML Windows PowerShell 5.1 source compatibility' {
         $ManifestVersion = (Import-PowerShellDataFile -Path $script:CompatibilityManifest).ModuleVersion
         $Module.Version.ToString() | Should -Be $ManifestVersion
         (New-PSIReport -Title 'Version check').ModuleVersion | Should -Be $ManifestVersion
-        @(Get-Command -Module PSInsightHTML -CommandType Function).Count | Should -Be 50
+        @(Get-Command -Module PSInsightHTML -CommandType Function).Count | Should -Be 51
     }
 
     It 'renders the evidence hint with a browser-decoded right arrow' {

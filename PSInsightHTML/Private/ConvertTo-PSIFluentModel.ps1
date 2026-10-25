@@ -208,7 +208,7 @@ function ConvertTo-PSIFluentModel {
             export     = [ordered]@{
                 enabled   = [bool] (Get-Prop $P 'EnableExport' $true)
                 columns   = $ExportList
-                formats   = @(@(Get-Prop $P 'ExportFormats' @('Csv', 'Xlsx', 'Print')) | ForEach-Object { [string] $_ })
+                formats   = @(foreach ($Format in (Get-Prop $P 'ExportFormats' @('Csv', 'Xlsx', 'Print'))) { [string] $Format })
                 fileName  = [string] (Get-Prop $P 'ExportFileName' '')
                 worksheet = [string] (Get-Prop $P 'WorksheetName' '')
             }

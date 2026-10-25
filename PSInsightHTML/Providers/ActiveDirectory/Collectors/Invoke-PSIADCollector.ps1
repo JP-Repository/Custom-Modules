@@ -8,6 +8,8 @@ function Invoke-PSIADCollector {
     )
     $Start=Get-Date; $Data=@(); $Status='NotRequested'; $Code=''; $Message=''; $Class=''
     if ($Requested) {
+        Write-Progress -Id 31 -Activity 'AD evidence collection' -Status ("Checking {0} on {1}" -f $Id,$Scope)
+        Write-Verbose ("Checking {0} on {1}" -f $Id,$Scope)
         if (-not $Adapter.ContainsKey($Id) -or $Adapter[$Id] -isnot [scriptblock]) { $Status='NotSupported'; $Class='CommandUnavailable' }
         else {
             try { $Data=@(& $Adapter[$Id] @Arguments | Where-Object { $null -ne $_ }); $Status='Collected' }
@@ -30,5 +32,9 @@ function Invoke-PSIADCollector {
         CoveragePercent=if ($Expected -gt 0) { [math]::Round(100*$Succeeded/$Expected,1) } else { $null }
         ErrorCode=$Code; ErrorClass=$Class; CollectionMethod=$Method; ErrorMessage=$Message; Notes=if ($Message) { $Message } elseif ($Status -eq 'Collected' -and $Data.Count -eq 0) { 'Query succeeded; no records returned' } else { '' }
     })
+    if ($Requested) {
+        Write-Progress -Id 31 -Activity 'AD evidence collection' -Completed
+        Write-Verbose ("Collector {0} on {1}: {2} ({3} ms)" -f $Id,$Scope,$Status,[math]::Round(($End-$Start).TotalMilliseconds,2))
+    }
     [pscustomobject]@{ Status=$Status; Data=$Data }
 }

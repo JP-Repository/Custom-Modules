@@ -3,6 +3,7 @@ param(
     [Parameter(Mandatory = $true)][ValidateSet('2022','2025')][string] $TargetOS,
     [switch] $UseSampleData,
     [string] $Domain,
+    [pscustomobject] $NormalizedSnapshot,
     [switch] $IncludeRemoteChecks,
     [switch] $IncludePortChecks,
     [switch] $IncludeSecurityChecks,
@@ -22,8 +23,12 @@ Import-Module (Join-Path $ModuleRoot 'PSInsightHTML.psd1') -Force
 if (-not $OutputPath) { if ($UseSampleData) { $OutputPath=Join-Path $ModuleRoot 'Reports/DCReadiness' } elseif ($env:OS -eq 'Windows_NT') { $OutputPath='C:\Temp\Reports\DCReadiness' } else { $OutputPath=Join-Path $ModuleRoot 'Reports/DCReadiness' } }
 if (-not $UseSampleData) { $OutputPath=Join-Path $OutputPath (Get-Date -Format 'yyyyMMdd-HHmmss') }
 
-$Snapshot=Collect-PSIADSnapshot -UseSampleData:$UseSampleData -Domain $Domain -Profile $CollectionProfile -IncludeRemoteChecks:$IncludeRemoteChecks -IncludePortChecks:$IncludePortChecks -IncludeSecurityChecks:$IncludeSecurityChecks -IncludeDependencyDiscovery:$IncludeDependencyDiscovery -DependencyInput $DependencyInput -CommandAdapter $CommandAdapter
-$Inventory=ConvertTo-PSIADDCReadinessModel -InputObject $Snapshot
+if ($null -ne $NormalizedSnapshot -and ($UseSampleData -or -not [string]::IsNullOrWhiteSpace($Domain))) { throw 'NormalizedSnapshot cannot be combined with UseSampleData or Domain.' }
+if ($null -ne $NormalizedSnapshot) { $Inventory=$NormalizedSnapshot }
+else {
+    $Snapshot=Collect-PSIADSnapshot -UseSampleData:$UseSampleData -Domain $Domain -Profile $CollectionProfile -IncludeRemoteChecks:$IncludeRemoteChecks -IncludePortChecks:$IncludePortChecks -IncludeSecurityChecks:$IncludeSecurityChecks -IncludeDependencyDiscovery:$IncludeDependencyDiscovery -DependencyInput $DependencyInput -CommandAdapter $CommandAdapter
+    $Inventory=ConvertTo-PSIADDCReadinessModel -InputObject $Snapshot
+}
 $Results=@{}
 foreach ($Target in @('2022','2025')) { $Results[$Target]=Test-PSIADDCReadiness -Inventory $Inventory -TargetOS $Target }
 $Selected=$Results[$TargetOS]
