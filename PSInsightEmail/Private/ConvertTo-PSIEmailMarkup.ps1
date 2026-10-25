@@ -118,14 +118,14 @@ function ConvertTo-PSIEmailComponentMarkup {
             $Columns = @($Properties.Columns)
             $MaxRows = [int] $Properties.MaxRows
             $ShownCount = [math]::Min($Data.Count, $MaxRows)
-            [void] $Builder.Append(('<table width="100%" cellpadding="0" cellspacing="0" border="0" aria-label="{0}" style="width:100%;border-collapse:collapse;border:1px solid #dbe3ec;background-color:#ffffff;">' -f (ConvertTo-PSIEmailHtmlEncoded $Properties.Title)))
-            [void] $Builder.Append('<thead><tr><th align="left" colspan="')
+            [void] $Builder.Append(('<table width="100%" class="psi-data-table" cellpadding="0" cellspacing="0" border="0" aria-label="{0}" style="width:100%;border-collapse:collapse;border:1px solid #dbe3ec;background-color:#ffffff;">' -f (ConvertTo-PSIEmailHtmlEncoded $Properties.Title)))
+            [void] $Builder.Append('<thead><tr class="psi-data-title-row"><th class="psi-data-title-cell" align="left" colspan="')
             [void] $Builder.Append([math]::Max(1, $Columns.Count))
             [void] $Builder.Append(('" style="padding:12px 16px;background-color:{0};border-left:3px solid {1};border-bottom:1px solid #dbe3ec;font-family:Segoe UI,Arial,Helvetica,sans-serif;font-size:16px;font-weight:600;line-height:22px;mso-line-height-rule:exactly;color:#172033;">' -f $TemplateStyle.AccentSoft, $TemplateStyle.Accent))
             [void] $Builder.Append((ConvertTo-PSIEmailHtmlEncoded $Properties.Title))
             [void] $Builder.Append('</th></tr>')
             if ($Columns.Count -gt 0) {
-                [void] $Builder.Append('<tr>')
+                [void] $Builder.Append('<tr class="psi-data-header-row">')
                 foreach ($Column in $Columns) {
                     $Label = if ($Properties.ColumnLabels.ContainsKey($Column)) { $Properties.ColumnLabels[$Column] } else { $Column }
                     [void] $Builder.Append('<th scope="col" align="left" valign="bottom" bgcolor="#e8eef5" style="padding:10px 12px;background-color:#e8eef5;border-bottom:1px solid #cbd5e1;font-family:Segoe UI,Arial,Helvetica,sans-serif;font-size:12px;font-weight:600;line-height:16px;mso-line-height-rule:exactly;color:#334155;">')
@@ -147,10 +147,12 @@ function ConvertTo-PSIEmailComponentMarkup {
                 else {
                     for ($Index = 0; $Index -lt $ShownCount; $Index++) {
                         $RowBackground = if ($Properties.ZebraStriping -and $Index % 2 -ne 0) { '#f8fafc' } else { '#ffffff' }
-                        [void] $Builder.Append(('<tr bgcolor="{0}" style="background-color:{0};">' -f $RowBackground))
+                        [void] $Builder.Append(('<tr class="psi-data-row" bgcolor="{0}" style="background-color:{0};">' -f $RowBackground))
                         foreach ($Column in $Columns) {
                             $Value = Get-PSIEmailObjectValue -InputObject $Data[$Index] -Name $Column
-                            [void] $Builder.Append('<td valign="top" style="padding:10px 12px;border-bottom:1px solid #e7edf3;font-family:Segoe UI,Arial,Helvetica,sans-serif;font-size:13px;line-height:19px;mso-line-height-rule:exactly;color:#334155;word-break:break-word;overflow-wrap:anywhere;">')
+                            $Label = if ($Properties.ColumnLabels.ContainsKey($Column)) { $Properties.ColumnLabels[$Column] } else { $Column }
+                            [void] $Builder.Append('<td valign="top" class="psi-data-cell" style="padding:10px 12px;border-bottom:1px solid #e7edf3;font-family:Segoe UI,Arial,Helvetica,sans-serif;font-size:13px;line-height:19px;mso-line-height-rule:exactly;color:#334155;word-break:break-word;overflow-wrap:anywhere;">')
+                            [void] $Builder.Append(('<span class="psi-mobile-cell-label" style="display:none;font-family:Segoe UI,Arial,Helvetica,sans-serif;font-size:11px;font-weight:600;line-height:16px;color:#64748b;text-transform:uppercase;">{0}</span>' -f (ConvertTo-PSIEmailHtmlEncoded $Label)))
                             [void] $Builder.Append((ConvertTo-PSIEmailHtmlEncoded $Value))
                             [void] $Builder.Append('</td>')
                         }
@@ -203,6 +205,20 @@ function ConvertTo-PSIEmailMarkup {
     [void] $Builder.AppendLine('    @media only screen and (max-width:720px) {')
     [void] $Builder.AppendLine('      .psi-container { width:100% !important; }')
     [void] $Builder.AppendLine('      .psi-page-pad { padding:12px 8px !important; }')
+    [void] $Builder.AppendLine('      .psi-header-cell { padding:20px 18px !important; }')
+    [void] $Builder.AppendLine('      .psi-header-meta-cell { display:block !important;width:100% !important;text-align:left !important;padding:0 0 12px 0 !important; }')
+    [void] $Builder.AppendLine('      .psi-section-cell { padding:24px 18px 4px 18px !important; }')
+    [void] $Builder.AppendLine('      .psi-row-cell { padding:12px 10px 0 10px !important; }')
+    [void] $Builder.AppendLine('      .psi-stack-column { display:block !important;width:100% !important;box-sizing:border-box !important;padding:0 8px 12px 8px !important; }')
+    [void] $Builder.AppendLine('      .psi-footer-cell { padding:20px 18px !important; }')
+    [void] $Builder.AppendLine('      .psi-data-table { display:block !important;width:100% !important;box-sizing:border-box !important; }')
+    [void] $Builder.AppendLine('      .psi-data-table thead,.psi-data-title-row,.psi-data-title-cell { display:block !important;width:100% !important;box-sizing:border-box !important; }')
+    [void] $Builder.AppendLine('      .psi-data-header-row { display:none !important; }')
+    [void] $Builder.AppendLine('      .psi-data-table tbody { display:block !important;width:100% !important; }')
+    [void] $Builder.AppendLine('      .psi-data-row { display:block !important;width:100% !important;border-top:1px solid #dbe3ec; }')
+    [void] $Builder.AppendLine('      .psi-data-cell { display:block !important;width:100% !important;box-sizing:border-box !important;border-bottom:0 !important;padding:7px 12px !important; }')
+    [void] $Builder.AppendLine('      .psi-data-cell:last-child { padding-bottom:12px !important; }')
+    [void] $Builder.AppendLine('      .psi-mobile-cell-label { display:block !important; }')
     [void] $Builder.AppendLine('    }')
     [void] $Builder.AppendLine('  </style>')
     [void] $Builder.AppendLine('</head>')
@@ -214,19 +230,19 @@ function ConvertTo-PSIEmailMarkup {
     [void] $Builder.AppendLine('    <tr><td class="psi-page-pad" align="center" style="padding:24px 12px;">')
     [void] $Builder.AppendLine('      <!--[if mso]><table role="presentation" width="920" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->')
     [void] $Builder.AppendLine('      <table role="presentation" class="psi-container" width="75%" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:75%;max-width:920px;border-collapse:collapse;background-color:#ffffff;">')
-    [void] $Builder.AppendLine(('        <tr><td bgcolor="{0}" style="padding:24px 32px;background-color:{0};border-bottom:4px solid {1};">' -f $TemplateStyle.Header, $TemplateStyle.HeaderAccent))
+    [void] $Builder.AppendLine(('        <tr><td class="psi-header-cell" bgcolor="{0}" style="padding:24px 32px;background-color:{0};border-bottom:4px solid {1};">' -f $TemplateStyle.Header, $TemplateStyle.HeaderAccent))
     if (-not [string]::IsNullOrWhiteSpace([string] $Email.BrandName) -or
         -not [string]::IsNullOrWhiteSpace([string] $Email.EnvironmentLabel) -or
         -not [string]::IsNullOrWhiteSpace($LogoMarkup)) {
         [void] $Builder.AppendLine('          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">')
         [void] $Builder.AppendLine('            <tr>')
-        [void] $Builder.AppendLine('              <td valign="middle" style="padding:0 10px 15px 0;">')
+        [void] $Builder.AppendLine('              <td class="psi-header-meta-cell" valign="middle" style="padding:0 10px 15px 0;">')
         if (-not [string]::IsNullOrWhiteSpace($LogoMarkup)) { [void] $Builder.AppendLine("                $LogoMarkup") }
         if (-not [string]::IsNullOrWhiteSpace([string] $Email.BrandName)) {
             [void] $Builder.AppendLine(('                <div style="padding-top:4px;font-family:Segoe UI,Arial,Helvetica,sans-serif;font-size:11px;font-weight:600;line-height:15px;mso-line-height-rule:exactly;color:{0};text-transform:uppercase;letter-spacing:0.2px;">{1}</div>' -f $TemplateStyle.HeaderMuted, (ConvertTo-PSIEmailHtmlEncoded $Email.BrandName)))
         }
         [void] $Builder.AppendLine('              </td>')
-        [void] $Builder.AppendLine('              <td valign="middle" align="right" style="padding:0 0 15px 10px;">')
+        [void] $Builder.AppendLine('              <td class="psi-header-meta-cell" valign="middle" align="right" style="padding:0 0 15px 10px;">')
         if (-not [string]::IsNullOrWhiteSpace([string] $Email.EnvironmentLabel)) {
             $EnvironmentColors = Get-PSIEmailStatusStyle -Status ([string] $Email.EnvironmentStatus)
             [void] $Builder.AppendLine(('                <span style="display:inline-block;padding:6px 8px;border:1px solid {0};background-color:{1};font-family:Segoe UI,Arial,Helvetica,sans-serif;font-size:11px;font-weight:600;line-height:15px;mso-line-height-rule:exactly;color:{2};text-transform:uppercase;letter-spacing:0.1px;">{3} · {4}</span>' -f $EnvironmentColors.Border, $EnvironmentColors.Background, $EnvironmentColors.Text, (ConvertTo-PSIEmailHtmlEncoded $Email.EnvironmentLabel), (ConvertTo-PSIEmailHtmlEncoded $Email.EnvironmentStatus)))
@@ -246,7 +262,7 @@ function ConvertTo-PSIEmailMarkup {
     [void] $Builder.AppendLine('        </td></tr>')
 
     foreach ($Section in $Email.Sections) {
-        [void] $Builder.AppendLine('        <tr><td style="padding:32px 32px 4px 32px;">')
+        [void] $Builder.AppendLine('        <tr><td class="psi-section-cell" style="padding:32px 32px 4px 32px;">')
         [void] $Builder.AppendLine(('          <h2 style="margin:0;padding:0 0 8px 12px;border-left:4px solid {0};border-bottom:1px solid #e2e8f0;font-family:Segoe UI,Arial,Helvetica,sans-serif;font-size:18px;font-weight:600;line-height:24px;mso-line-height-rule:exactly;color:{1};">{2}</h2>' -f $TemplateStyle.Accent, $TemplateStyle.Section, (ConvertTo-PSIEmailHtmlEncoded $Section.Title)))
         if (-not [string]::IsNullOrWhiteSpace([string] $Section.Description)) {
             [void] $Builder.AppendLine(('          <div style="padding-top:8px;font-family:Segoe UI,Arial,Helvetica,sans-serif;font-size:14px;line-height:21px;mso-line-height-rule:exactly;color:#64748b;">{0}</div>' -f (ConvertTo-PSIEmailHtmlEncoded $Section.Description)))
@@ -256,7 +272,7 @@ function ConvertTo-PSIEmailMarkup {
             $Columns = [int] $Row.Columns
             if ($Columns -notin @(1, 2, 3, 4)) { throw "Email row Columns must be 1, 2, 3, or 4. Found '$Columns'." }
             $Width = [math]::Floor(100 / $Columns)
-            [void] $Builder.AppendLine('        <tr><td style="padding:16px 24px 0 24px;">')
+            [void] $Builder.AppendLine('        <tr><td class="psi-row-cell" style="padding:16px 24px 0 24px;">')
             [void] $Builder.AppendLine('          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;table-layout:fixed;border-collapse:collapse;">')
             $Components = @($Row.Components)
             if ($Components.Count -eq 0) {
@@ -266,7 +282,7 @@ function ConvertTo-PSIEmailMarkup {
                 [void] $Builder.AppendLine('            <tr>')
                 for ($ColumnIndex = 0; $ColumnIndex -lt $Columns; $ColumnIndex++) {
                     $ComponentIndex = $Index + $ColumnIndex
-                    [void] $Builder.AppendLine(('              <td width="{0}%" align="left" valign="top" style="width:{0}%;padding:0 8px 12px 8px;">' -f $Width))
+                    [void] $Builder.AppendLine(('              <td class="psi-stack-column" width="{0}%" align="left" valign="top" style="width:{0}%;padding:0 8px 12px 8px;">' -f $Width))
                     if ($ComponentIndex -lt $Components.Count) {
                         [void] $Builder.AppendLine((ConvertTo-PSIEmailComponentMarkup -Component $Components[$ComponentIndex] -TemplateStyle $TemplateStyle))
                     }
@@ -280,7 +296,7 @@ function ConvertTo-PSIEmailMarkup {
         }
     }
 
-    [void] $Builder.AppendLine('        <tr><td style="padding:24px 32px 32px 32px;">')
+    [void] $Builder.AppendLine('        <tr><td class="psi-footer-cell" style="padding:24px 32px 32px 32px;">')
     [void] $Builder.AppendLine(('          <div style="padding-top:12px;border-top:1px solid #dbe3ec;font-family:Segoe UI,Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;mso-line-height-rule:exactly;color:#64748b;">'))
     if (-not [string]::IsNullOrWhiteSpace([string] $Email.FooterNote)) {
         [void] $Builder.AppendLine(('            <div style="padding-bottom:8px;color:#475569;">{0}</div>' -f (ConvertTo-PSIEmailHtmlEncoded $Email.FooterNote)))

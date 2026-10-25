@@ -237,6 +237,26 @@ Describe 'PSInsightEmail rendering' {
         $Html | Should -Match '<h2[^>]*font-size:18px;font-weight:600;line-height:24px'
     }
 
+    It 'includes mobile layout rules while preserving the Outlook desktop table fallback' {
+        $Email = New-TestEmail -Columns 3
+        $Email | Add-PSIEmailKPI -Title 'Systems' -Value 3 -Status Healthy | Out-Null
+        $Html = ConvertTo-PSIEmailHtml -Email $Email
+        $Html | Should -Match '@media only screen and \(max-width:720px\)'
+        $Html | Should -Match '\.psi-stack-column \{ display:block !important;width:100% !important'
+        $Html | Should -Match '<td class="psi-stack-column" width="33%"'
+        $Html | Should -Match '<!--\[if mso\]><table role="presentation" width="920"'
+    }
+
+    It 'provides encoded field labels for mobile table records' {
+        $Data = @([pscustomobject]@{ Name = 'server01.example.invalid'; Status = 'Healthy' })
+        $Email = New-TestEmail | Add-PSIEmailTable -Title 'Systems' -Data $Data -Columns @('Name', 'Status') -ColumnLabels @{ Name = 'System <Name>' }
+        $Html = ConvertTo-PSIEmailHtml -Email $Email
+        $Html | Should -Match '<tr class="psi-data-row"'
+        $Html | Should -Match '<span class="psi-mobile-cell-label"[^>]*>System &lt;Name&gt;</span>'
+        $Html | Should -Not -Match 'System <Name>'
+        $Html | Should -Match '<th scope="col"[^>]*>System &lt;Name&gt;</th>'
+    }
+
     It 'exposes explicit text for every supported status' {
         $Email = New-TestEmail -Columns 4
         foreach ($Status in 'Healthy', 'Warning', 'Critical', 'Informational', 'Neutral') {
@@ -275,7 +295,7 @@ Describe 'PSInsightEmail rendering' {
         $Html | Should -Match 'Sample 2'
         $Html | Should -Not -Match 'Sample 3'
         $Html | Should -Match 'Showing 2 of 4 records\.'
-        $Html | Should -Match '<tr bgcolor="#f8fafc" style="background-color:#f8fafc;">'
+        $Html | Should -Match '<tr class="psi-data-row" bgcolor="#f8fafc" style="background-color:#f8fafc;">'
     }
 
     It 'renders a clear semantic empty table state' {

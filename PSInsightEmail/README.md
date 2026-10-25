@@ -8,7 +8,7 @@ PSInsightEmail is a dependency-free PowerShell framework for composing professio
 - Text, KPI, key/value, alert, table, and divider components.
 - Full-width status banners with visible severity labels.
 - One-, two-, three-, and four-column email rows using presentation tables.
-- A responsive 75%-width light design capped at 920px, with a fixed-width Outlook fallback.
+- A responsive 75%-width light design capped at 920px, with a fixed-width Outlook fallback and stacked mobile components and data records.
 - Reusable brand, environment, source, and footer metadata.
 - HTML encoding for all supplied display values.
 - Bounded email tables with an explicit truncation note.
@@ -73,6 +73,7 @@ Run the fictional examples from `Custom-Modules`:
 ./PSInsightEmail/Examples/New-HealthEmail.ps1
 ./PSInsightEmail/Examples/New-ThresholdEmail.ps1
 ./PSInsightEmail/Examples/New-AttachmentEmail.ps1
+./PSInsightEmail/Examples/New-AdfsRelyingPartyEmail.ps1
 ./PSInsightEmail/Examples/New-SmtpEmailExample.ps1
 ./PSInsightEmail/Examples/New-GraphEmailExample.ps1
 ```
