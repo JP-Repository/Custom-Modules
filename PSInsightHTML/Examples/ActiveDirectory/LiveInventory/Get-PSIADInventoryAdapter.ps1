@@ -5,7 +5,7 @@ function Get-PSIADInventoryAdapter {
     if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) {
         throw 'The ActiveDirectory PowerShell module is required for live inventory.'
     }
-    Import-Module ActiveDirectory -ErrorAction Stop
+    Import-Module ActiveDirectory -ErrorAction Stop -Verbose:$false
     @{
         Domain = { param($Name) Get-ADDomain -Identity $Name -Server $Name -ErrorAction Stop }
         Groups = { param($Name, $Limit) @(Get-ADGroup -Filter * -Server $Name -Properties Description,GroupScope,GroupCategory -ResultSetSize ($Limit + 1) -ErrorAction Stop) }

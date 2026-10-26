@@ -1,7 +1,7 @@
 function New-PSIADLiveSnapshot {
     <# .SYNOPSIS Read-only, sequential collection for one explicitly resolved AD domain. #>
     [CmdletBinding()]
-    param([string]$Domain,[switch]$IncludeRemoteChecks,[switch]$IncludePortChecks,[switch]$IncludeSecurityChecks,[switch]$IncludeDependencyDiscovery,[switch]$IncludeHealthEvidence,[ValidateRange(1,168)][int]$EventWindowHours=72,[hashtable]$CommandAdapter)
+    param([string]$Domain,[switch]$IncludeRemoteChecks,[switch]$IncludePortChecks,[switch]$IncludeSecurityChecks,[switch]$IncludeDependencyDiscovery,[switch]$IncludeHealthEvidence,[ValidateRange(1,168)][int]$EventWindowHours=72,[ValidateRange(5,300)][int]$EventQueryTimeoutSeconds=30,[hashtable]$CommandAdapter)
     if (-not $CommandAdapter) { $CommandAdapter=Get-PSIADReadOnlyAdapter }
     $Results=[System.Collections.Generic.List[object]]::new(); $Logs=[System.Collections.Generic.List[object]]::new()
     $DomainResult=Invoke-PSIADCollector -Adapter $CommandAdapter -Id Domain -Category Inventory -Scope $Domain -Arguments @($Domain) -Results $Results -Logs $Logs
@@ -76,7 +76,7 @@ function New-PSIADLiveSnapshot {
         if ($Cpu.Status -eq 'Collected' -and $Cpu.Data.Count) { $DC.CPU=[math]::Round([double](($Cpu.Data | Measure-Object -Average).Average),1) }
         $Features=Invoke-PSIADCollector -Adapter $CommandAdapter -Id Features -Category HealthEvidence -Scope $DC.Name -Arguments @($DC.Name) -Requested ([bool]$IncludeHealthEvidence) -Method 'CIM Win32_ServerFeature' -Results $Results -Logs $Logs
         if ($Features.Status -eq 'Collected') { $DC.InstalledFeatures=@($Features.Data | ForEach-Object { [pscustomobject]@{ Id=$_.ID; Name=[string]$_.Name; Installed=$true } }) }
-        $Events=Invoke-PSIADCollector -Adapter $CommandAdapter -Id Events -Category HealthEvidence -Scope $DC.Name -Arguments @($DC.Name,$EventWindowHours) -Requested ([bool]$IncludeHealthEvidence) -Method 'Windows event log' -Results $Results -Logs $Logs
+        $Events=Invoke-PSIADCollector -Adapter $CommandAdapter -Id Events -Category HealthEvidence -Scope $DC.Name -Arguments @($DC.Name,$EventWindowHours,$EventQueryTimeoutSeconds) -Requested ([bool]$IncludeHealthEvidence) -Method 'Windows event log' -Results $Results -Logs $Logs
         if ($Events.Status -eq 'Collected' -and $Events.Data.Count) {
             $EventResult=$Results[$Results.Count-1]
             foreach ($Item in @($Events.Data[0].Observations)) { $EventObservations.Add($Item) }

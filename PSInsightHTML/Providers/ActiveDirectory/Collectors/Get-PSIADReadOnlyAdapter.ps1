@@ -1,8 +1,51 @@
+function Invoke-PSIADTimedEventQuery {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$HostName,
+        [Parameter(Mandatory)][string]$LogName,
+        [Parameter(Mandatory)][datetime]$StartTime,
+        [ValidateRange(5,300)][int]$TimeoutSeconds = 30,
+        [scriptblock]$QueryScriptBlock
+    )
+    if ($null -eq $QueryScriptBlock) {
+        $QueryScriptBlock = {
+            param($Computer, $Log, $Since)
+            try {
+                $Items = @(Get-WinEvent -ComputerName $Computer -FilterHashtable @{ LogName=$Log; StartTime=$Since } -MaxEvents 100 -ErrorAction Stop | ForEach-Object {
+                    $Summary = ([string]$_.Message -replace '\s+', ' ').Trim()
+                    if ($Summary.Length -gt 240) { $Summary = $Summary.Substring(0,240) }
+                    [pscustomobject]@{ ProviderName=[string]$_.ProviderName; Id=[int]$_.Id; LevelDisplayName=[string]$_.LevelDisplayName; TimeCreated=[datetime]$_.TimeCreated; MessageSummary=$Summary }
+                })
+                [pscustomobject]@{ NoMatchingEvents=$false; Items=$Items }
+            }
+            catch {
+                if ($_.FullyQualifiedErrorId -like 'NoMatchingEventsFound*') {
+                    [pscustomobject]@{ NoMatchingEvents=$true; Items=@() }
+                }
+                else { throw }
+            }
+        }
+    }
+    $Job = $null
+    try {
+        $Job = Start-Job -ScriptBlock $QueryScriptBlock -ArgumentList @($HostName,$LogName,$StartTime) -ErrorAction Stop
+        if ($null -eq (Wait-Job -Job $Job -Timeout $TimeoutSeconds -ErrorAction Stop)) {
+            throw [System.TimeoutException]::new("Event log '$LogName' on $HostName exceeded $TimeoutSeconds seconds.")
+        }
+        $Response = @(Receive-Job -Job $Job -ErrorAction Stop)
+        if ($Response.Count -ne 1) { throw [System.InvalidOperationException]::new("Event log '$LogName' returned no query result.") }
+        $Response[0]
+    }
+    finally {
+        if ($null -ne $Job) { Remove-Job -Job $Job -Force -ErrorAction SilentlyContinue }
+    }
+}
+
 function Get-PSIADReadOnlyAdapter {
     [CmdletBinding()]
     param()
     if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) { throw 'The ActiveDirectory module is required for live collection.' }
-    Import-Module ActiveDirectory -ErrorAction Stop
+    Import-Module ActiveDirectory -ErrorAction Stop -Verbose:$false
     @{
         Domain = { param($Name) if ($Name) { Get-ADDomain -Identity $Name -Server $Name -ErrorAction Stop } else { Get-ADDomain -ErrorAction Stop } }
         Forest = { param($Name) Get-ADForest -Identity $Name -ErrorAction Stop }
@@ -27,19 +70,18 @@ function Get-PSIADReadOnlyAdapter {
         Cpu = { param($HostName) @(Get-CimInstance -ClassName Win32_Processor -ComputerName $HostName -ErrorAction Stop | Select-Object -ExpandProperty LoadPercentage) }
         Features = { param($HostName) @(Get-CimInstance -ClassName Win32_ServerFeature -ComputerName $HostName -ErrorAction Stop | Select-Object ID,Name) }
         Events = {
-            param($HostName,$WindowHours)
+            param($HostName,$WindowHours,[int]$EventQueryTimeoutSeconds=30)
             $Start=(Get-Date).AddHours(-[int]$WindowHours)
             $Logs=@('Directory Service','DFS Replication','DNS Server','System')
             $Observations=@(); $Queries=@()
             foreach ($LogName in $Logs) {
                 try {
-                    $Items=@(Get-WinEvent -ComputerName $HostName -FilterHashtable @{ LogName=$LogName; StartTime=$Start } -MaxEvents 100 -ErrorAction Stop)
-                    $Queries+= [pscustomobject]@{ Log=$LogName; State='Collected'; ErrorClass=''; Message='' }
-                    foreach ($Item in $Items) {
+                    Write-Verbose ("Querying event log '{0}' on {1} (timeout {2}s)" -f $LogName,$HostName,$EventQueryTimeoutSeconds)
+                    $Response=Invoke-PSIADTimedEventQuery -HostName $HostName -LogName $LogName -StartTime $Start -TimeoutSeconds $EventQueryTimeoutSeconds
+                    $Queries+= [pscustomobject]@{ Log=$LogName; State='Collected'; ErrorClass=''; Message=if ($Response.NoMatchingEvents) { 'No matching events' } else { '' } }
+                    foreach ($Item in @($Response.Items)) {
                         $Category=switch ($LogName) { 'Directory Service' { 'DirectoryServices' }; 'DFS Replication' { 'DFSR' }; 'DNS Server' { 'DNS' }; default { 'System' } }
-                        $Summary=([string]$Item.Message -replace '\s+',' ').Trim()
-                        if ($Summary.Length -gt 240) { $Summary=$Summary.Substring(0,240) }
-                        $Observations+= [pscustomobject]@{ DC=$HostName; Log=$LogName; Provider=[string]$Item.ProviderName; EventId=[int]$Item.Id; Level=[string]$Item.LevelDisplayName; Timestamp=[datetime]$Item.TimeCreated; MessageSummary=$Summary; EvidenceCategory=$Category; CollectionState='Collected'; QueryWindowHours=[int]$WindowHours }
+                        $Observations+= [pscustomobject]@{ DC=$HostName; Log=$LogName; Provider=[string]$Item.ProviderName; EventId=[int]$Item.Id; Level=[string]$Item.LevelDisplayName; Timestamp=[datetime]$Item.TimeCreated; MessageSummary=[string]$Item.MessageSummary; EvidenceCategory=$Category; CollectionState='Collected'; QueryWindowHours=[int]$WindowHours }
                     }
                 } catch {
                     # Event ID 0 is returned by some hosts for an empty matching window.
@@ -55,7 +97,7 @@ function Get-PSIADReadOnlyAdapter {
             param($HostName)
             $Unavailable='DNS Server PowerShell management cmdlets are unavailable on the collector host.'
             if (-not (Get-Module -ListAvailable -Name DnsServer)) { throw [System.NotSupportedException]::new($Unavailable) }
-            try { Import-Module DnsServer -ErrorAction Stop }
+            try { Import-Module DnsServer -ErrorAction Stop -Verbose:$false }
             catch { throw [System.NotSupportedException]::new($Unavailable) }
             foreach ($Name in @('Get-DnsServerForwarder','Get-DnsServerZone','Get-DnsServerConditionalForwarderZone')) {
                 if (-not (Get-Command -Name $Name -ErrorAction SilentlyContinue)) { throw [System.NotSupportedException]::new($Unavailable) }

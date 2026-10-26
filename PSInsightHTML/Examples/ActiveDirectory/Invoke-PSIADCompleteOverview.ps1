@@ -13,6 +13,7 @@ param(
     [hashtable] $CommandAdapter,
     [ValidateSet('Core','Operational','Health','Security','Dependencies','Full')][string] $CollectionProfile = 'Full',
     [ValidateRange(1,50000)][int] $MaxObjects = 2000,
+    [ValidateRange(5,300)][int] $EventQueryTimeoutSeconds = 30,
     [ValidateSet('Light','Dark','Auto')][string] $Theme = 'Auto',
     [string] $OutputPath,
     [ValidateSet('DomainOverview','DCInventory','DCReadiness2022','DCReadiness2025','HealthEvidence','Health','Security','Compliance','DNS','Replication','SitesSubnets','GroupPolicy','OUs','Groups','Users','Computers')]
@@ -22,7 +23,12 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $ModuleRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-Import-Module (Join-Path $ModuleRoot 'PSInsightHTML.psd1') -Force -ErrorAction Stop -Verbose:$false
+# The public command already runs inside this module. Avoid a second forced import,
+# which repeats bundle validation and can emit the same warning twice.
+$LoadedModule = @(Get-Module -Name PSInsightHTML | Where-Object { $_.ModuleBase -eq $ModuleRoot })
+if ($LoadedModule.Count -eq 0) {
+    Import-Module (Join-Path $ModuleRoot 'PSInsightHTML.psd1') -Force -ErrorAction Stop -Verbose:$false
+}
 . (Join-Path $ModuleRoot 'Providers/ActiveDirectory/Shared/Import-PSIADProvider.ps1')
 if ($UseSampleData -and ($null -ne $Snapshot -or -not [string]::IsNullOrWhiteSpace($Domain))) { throw 'UseSampleData cannot be combined with Snapshot or Domain.' }
 if ($null -ne $Snapshot -and -not [string]::IsNullOrWhiteSpace($Domain) -and [string]$Snapshot.Domains[0].Name -ne $Domain) { throw 'Snapshot domain does not match the explicitly requested Domain.' }
@@ -30,7 +36,7 @@ if (-not $UseSampleData -and $null -eq $Snapshot -and [string]::IsNullOrWhiteSpa
 if ($null -eq $Snapshot) {
     Write-Progress -Id 30 -Activity 'AD Complete Overview' -Status ("Collecting {0} snapshot" -f $CollectionProfile)
     try {
-        $Raw = Collect-PSIADSnapshot -UseSampleData:$UseSampleData -Domain $Domain -Profile $CollectionProfile -CommandAdapter $CommandAdapter -Verbose:([bool]$PSBoundParameters['Verbose'])
+        $Raw = Collect-PSIADSnapshot -UseSampleData:$UseSampleData -Domain $Domain -Profile $CollectionProfile -EventQueryTimeoutSeconds $EventQueryTimeoutSeconds -CommandAdapter $CommandAdapter -Verbose:([bool]$PSBoundParameters['Verbose'])
         $Snapshot = ConvertTo-PSIADDCReadinessModel -InputObject $Raw
     }
     finally { Write-Progress -Id 30 -Activity 'AD Complete Overview' -Completed }

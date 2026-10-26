@@ -20,6 +20,7 @@ function Invoke-PSIADCollector {
                 $Code=if ($ToolUnavailable) { 'ToolUnavailable' } else { $_.Exception.GetType().Name }
                 $Message=if ($ToolUnavailable) { 'DNS Server PowerShell management cmdlets are unavailable on the collector host.' } else { $_.Exception.Message }
                 $Logs.Add([pscustomobject]@{ Timestamp=Get-Date; Level='Warning'; Collector=$Id; Resource=$Scope; Message=$Message; ExceptionType=$Code })
+                Write-Verbose ("Collector {0} on {1} failed ({2}): {3}" -f $Id,$Scope,$Class,$Message)
             }
         }
     }

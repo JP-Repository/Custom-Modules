@@ -185,3 +185,39 @@ Describe 'AD health evidence foundation' {
         } finally { if (Test-Path $Folder) { Remove-Item $Folder -Recurse -Force } }
     }
 }
+
+Describe 'Bounded AD event-log collection' {
+    BeforeAll {
+        $AdapterPath = Join-Path (Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent) 'Providers/ActiveDirectory/Collectors/Get-PSIADReadOnlyAdapter.ps1'
+        . $AdapterPath
+    }
+
+    It 'returns a completed query response from a local background job' {
+        $Result = Invoke-PSIADTimedEventQuery -HostName 'dc.example.test' -LogName 'System' -StartTime (Get-Date) -TimeoutSeconds 5 -QueryScriptBlock {
+            param($Computer,$Log,$Since)
+            [pscustomobject]@{ NoMatchingEvents=$false; Items=@([pscustomobject]@{ MessageSummary='Fictional event' }) }
+        }
+        $Result.NoMatchingEvents | Should -BeFalse
+        @($Result.Items).Count | Should -Be 1
+        $Result.Items[0].MessageSummary | Should -Be 'Fictional event'
+    }
+
+    It 'preserves an empty successful event query' {
+        $Result = Invoke-PSIADTimedEventQuery -HostName 'dc.example.test' -LogName 'System' -StartTime (Get-Date) -TimeoutSeconds 5 -QueryScriptBlock {
+            param($Computer,$Log,$Since)
+            [pscustomobject]@{ NoMatchingEvents=$true; Items=@() }
+        }
+        $Result.NoMatchingEvents | Should -BeTrue
+        @($Result.Items).Count | Should -Be 0
+    }
+
+    It 'stops and removes a query job when the configured timeout expires' {
+        $Before = @(Get-Job).Count
+        { Invoke-PSIADTimedEventQuery -HostName 'dc.example.test' -LogName 'Directory Service' -StartTime (Get-Date) -TimeoutSeconds 5 -QueryScriptBlock {
+            param($Computer,$Log,$Since)
+            Start-Sleep -Seconds 20
+            [pscustomobject]@{ NoMatchingEvents=$false; Items=@() }
+        } } | Should -Throw '*exceeded 5 seconds*'
+        @(Get-Job).Count | Should -Be $Before
+    }
+}

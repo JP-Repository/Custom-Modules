@@ -15,6 +15,23 @@ Invoke-PSIADCompleteOverview `
 
 Open `Reports/ADCompleteOverview-Sample/index.html`. No directory, DNS, CIM, or network query is made.
 
+## After copying to a Windows module path
+
+The fast-load bundle fingerprint includes source-file timestamps. A copy or Git checkout on another computer can change those timestamps and show an out-of-date bundle warning, even if the source content is unchanged. The module then loads the individual sources and remains functional, but import is slower. On the Windows host, rebuild once in the installed module directory (which must be writable), then import it again:
+
+```powershell
+$ModuleRoot = (Get-Module PSInsightHTML).ModuleBase
+& (Join-Path $ModuleRoot 'Build\Build-PSInsightHTML.ps1')
+Remove-Module PSInsightHTML
+Import-Module (Join-Path $ModuleRoot 'PSInsightHTML.psd1') -Force
+```
+
+Run the build after any later source-file update as well. This step does not query Active Directory.
+
+## Slow remote event logs
+
+`Full` and `Health` query four event logs per DC. Each remote log query runs in a local background job and is limited to 30 seconds by default. A timed-out log is recorded as a failed evidence query; the remaining logs and DC checks continue. Adjust this limit on the complete overview command with `-EventQueryTimeoutSeconds 60` (allowed range: 5-300). With `-Verbose`, the output identifies the log being queried. Other remote collectors can still take time independently of this setting. `Core` skips remote health and event-log collection when a directory-only pilot is needed.
+
 ## Windows live pilot
 
 Copy/install the module to a normal PowerShell module path, start **Windows PowerShell 5.1** on a management host, and verify `ActiveDirectory` and `GroupPolicy` are available. Use an account with the needed read permissions and access to the selected domain and DCs. Full collection requests remote, DNS, security, event, and dependency observations; unavailable permissions or tools are recorded as gaps.
